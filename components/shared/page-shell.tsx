@@ -1,0 +1,82 @@
+"use client"
+
+import * as React from "react"
+import { LucideIcon } from "lucide-react"
+import { EmptyState } from "@/components/ui/empty-state"
+import { Button } from "@/components/ui/button"
+import { cn } from "@/lib/utils"
+
+interface PageShellProps {
+    title: string
+    description?: string
+    actions?: React.ReactNode
+    isEmpty?: boolean
+    emptyConfig?: {
+        icon: LucideIcon
+        title: string
+        description: string
+        actionText?: string
+        onAction?: () => void
+    }
+    children: React.ReactNode
+}
+
+export function PageShell({
+    title,
+    description,
+    actions,
+    isEmpty,
+    emptyConfig,
+    children,
+}: PageShellProps) {
+    return (
+        <div className="flex-1 flex flex-col overflow-hidden">
+            {/* Wrapper Principal Sagrado (Áreas C, D e E) */}
+            <div className="max-w-[1440px] mx-auto px-8 w-full flex-1 flex flex-col pt-8 pb-8 gap-6 overflow-hidden">
+
+                {/* Header de Página (Área C) */}
+                <div className="flex items-center justify-between flex-none font-sans">
+                    <div>
+                        <h1 className="text-3xl font-bold tracking-tight text-zinc-950 font-jakarta">
+                            {title}
+                        </h1>
+                        {description && (
+                            <p className="text-zinc-500 mt-1 font-sans">
+                                {description}
+                            </p>
+                        )}
+                    </div>
+
+                    <div className="flex items-center gap-2 font-sans">
+                        {actions}
+                    </div>
+                </div>
+
+                {/* Área de Conteúdo (Áreas D e E) */}
+                <div className="flex-1 flex flex-col overflow-hidden">
+                    {isEmpty && emptyConfig ? (
+                        <div className="flex-1 flex items-center justify-center">
+                            <EmptyState
+                                variant="outlined"
+                                icon={emptyConfig.icon}
+                                title={emptyConfig.title}
+                                description={emptyConfig.description}
+                                action={
+                                    emptyConfig.actionText && (
+                                        <Button onClick={emptyConfig.onAction} className="bg-zinc-950 text-white hover:bg-zinc-800 font-sans">
+                                            {emptyConfig.actionText}
+                                        </Button>
+                                    )
+                                }
+                            />
+                        </div>
+                    ) : (
+                        <div className="flex-1 flex flex-col overflow-hidden">
+                            {children}
+                        </div>
+                    )}
+                </div>
+            </div>
+        </div>
+    )
+}
