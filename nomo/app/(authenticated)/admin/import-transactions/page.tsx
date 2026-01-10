@@ -127,7 +127,9 @@ export default function ImportTransactionsPage() {
                     addLog(`✅ Favorecido ${nome} encontrado`)
                 }
 
-                favorecidosMap.set(nome, payeeData.id)
+                if (payeeData) {
+                    favorecidosMap.set(nome, payeeData.id)
+                }
             }
 
             // Inserir as transações
