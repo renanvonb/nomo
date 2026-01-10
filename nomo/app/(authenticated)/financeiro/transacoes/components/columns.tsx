@@ -2,6 +2,8 @@
 
 import { ColumnDef } from "@tanstack/react-table"
 import { Badge } from "@/components/ui/badge"
+import { StatusIndicator } from "@/components/ui/status-indicator"
+import { ArrowUpCircle, ArrowDownCircle, PieChart } from "lucide-react"
 
 export type Transaction = {
     id: string
@@ -16,29 +18,25 @@ export type Transaction = {
     subcategories?: { name: string } | null
 }
 
-const typeBadgeMap = {
-    revenue: "Receita",
-    expense: "Despesa",
-    investment: "Investimento",
+const typeIconMap = {
+    revenue: { icon: ArrowUpCircle, color: "text-emerald-600" },
+    expense: { icon: ArrowDownCircle, color: "text-rose-600" },
+    investment: { icon: PieChart, color: "text-blue-600" },
 }
 
 export const columns: ColumnDef<Transaction>[] = [
     {
         accessorKey: "description",
         header: "Descrição",
-        cell: ({ row }) => (
-            <div className="text-sm font-medium">{row.getValue("description")}</div>
-        ),
-    },
-    {
-        accessorKey: "type",
-        header: "Tipo",
         cell: ({ row }) => {
-            const type = row.getValue("type") as keyof typeof typeBadgeMap
+            const type = row.original.type as keyof typeof typeIconMap
+            const { icon: Icon, color } = typeIconMap[type]
+
             return (
-                <Badge variant="secondary">
-                    {typeBadgeMap[type]}
-                </Badge>
+                <div className="flex items-center gap-2">
+                    <Icon className={`h-4 w-4 ${color}`} />
+                    <span className="text-sm font-medium">{row.getValue("description")}</span>
+                </div>
             )
         },
     },
@@ -49,7 +47,7 @@ export const columns: ColumnDef<Transaction>[] = [
         cell: ({ row }) => {
             const payee = row.original.payees?.name
             return payee ? (
-                <Badge variant="secondary">{payee}</Badge>
+                <Badge variant="secondary" className="text-sm font-normal">{payee}</Badge>
             ) : (
                 <span className="text-sm text-muted-foreground">-</span>
             )
@@ -62,33 +60,7 @@ export const columns: ColumnDef<Transaction>[] = [
         cell: ({ row }) => {
             const category = row.original.categories?.name
             return category ? (
-                <Badge variant="secondary">{category}</Badge>
-            ) : (
-                <span className="text-sm text-muted-foreground">-</span>
-            )
-        },
-    },
-    {
-        id: "subcategory",
-        accessorFn: (row) => row.subcategories?.name,
-        header: "Subcategoria",
-        cell: ({ row }) => {
-            const subcategory = row.original.subcategories?.name
-            return subcategory ? (
-                <Badge variant="secondary">{subcategory}</Badge>
-            ) : (
-                <span className="text-sm text-muted-foreground">-</span>
-            )
-        },
-    },
-    {
-        id: "payment_method",
-        accessorFn: (row) => row.payment_methods?.name,
-        header: "Método",
-        cell: ({ row }) => {
-            const method = row.original.payment_methods?.name
-            return method ? (
-                <Badge variant="secondary">{method}</Badge>
+                <Badge variant="secondary" className="text-sm font-normal">{category}</Badge>
             ) : (
                 <span className="text-sm text-muted-foreground">-</span>
             )
@@ -134,11 +106,24 @@ export const columns: ColumnDef<Transaction>[] = [
         header: "Status",
         cell: ({ row }) => {
             const isPaid = !!row.original.payment_date
-            return (
-                <div className="text-sm">
-                    {isPaid ? "Pago" : "Pendente"}
-                </div>
-            )
+            const dueDate = row.original.due_date
+
+            // Simple date comparison using ISO string format (YYYY-MM-DD)
+            const today = new Date().toISOString().split('T')[0]
+
+            let status: "Pendente" | "Realizado" | "Agendado" | "Atrasado"
+
+            if (isPaid) {
+                status = "Realizado"
+            } else if (dueDate > today) {
+                status = "Agendado"
+            } else if (dueDate < today) {
+                status = "Atrasado"
+            } else {
+                status = "Pendente"
+            }
+
+            return <StatusIndicator status={status} />
         },
     },
 ]

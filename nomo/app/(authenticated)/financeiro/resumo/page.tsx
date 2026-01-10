@@ -1,3 +1,5 @@
+"use client"
+
 import * as React from "react"
 import { PageShell } from "@/components/shared/page-shell"
 import { LayoutDashboard, Plus } from "lucide-react"
@@ -20,7 +22,6 @@ export default function ResumoPage() {
                 title: "Resumo em construção",
                 description: "Estamos preparando um dashboard incrível para você acompanhar suas finanças.",
                 actionText: "Saiba mais",
-                onAction: () => console.log("Saiba mais clicado"),
             }}
         >
             <div className="flex-1 flex items-center justify-center">

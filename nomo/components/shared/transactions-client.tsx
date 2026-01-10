@@ -22,7 +22,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select"
-import { MonthPicker } from "@/components/ui/month-picker"
+import { AdaptiveDatePicker } from "@/components/ui/adaptive-date-picker"
 
 interface TransactionsClientProps {
     initialData: any[]
@@ -75,10 +75,9 @@ export default function TransactionsClient({ initialData }: TransactionsClientPr
         startTransition(() => {
             const params = new URLSearchParams(searchParams.toString())
             params.set('range', newRange)
-            if (newRange !== 'custom') {
-                params.delete('from')
-                params.delete('to')
-            }
+            // Clear date params when changing range - AdaptiveDatePicker will set current period
+            params.delete('from')
+            params.delete('to')
             router.push(`?${params.toString()}`, { scroll: false })
         })
     }
@@ -92,21 +91,11 @@ export default function TransactionsClient({ initialData }: TransactionsClientPr
             if (newDate?.to) params.set('to', newDate.to.toISOString())
             else params.delete('to')
 
-            if (newDate?.from) params.set('range', 'custom')
-
             router.push(`?${params.toString()}`, { scroll: false })
         })
     }
 
-    const handleMonthChange = (date: Date) => {
-        startTransition(() => {
-            const params = new URLSearchParams(searchParams.toString())
-            params.set('from', new Date(date.getFullYear(), date.getMonth(), 1).toISOString())
-            params.set('to', new Date(date.getFullYear(), date.getMonth() + 1, 0).toISOString())
-            params.set('range', 'custom')
-            router.push(`?${params.toString()}`, { scroll: false })
-        })
-    }
+
 
     // Filtragem Client-side reativa
 
@@ -161,39 +150,43 @@ export default function TransactionsClient({ initialData }: TransactionsClientPr
                         </p>
                     </div>
 
-                    <div className="flex items-center gap-3 font-sans">
-                        <Select
-                            value={range}
-                            onValueChange={handleRangeChange}
-                        >
-                            <SelectTrigger className="w-[140px] font-inter">
-                                <SelectValue placeholder="Período" />
-                            </SelectTrigger>
-                            <SelectContent className='bg-white'>
-                                <SelectItem value="dia">Hoje</SelectItem>
-                                <SelectItem value="semana">Semana</SelectItem>
-                                <SelectItem value="mes">Mês Atual</SelectItem>
-                                <SelectItem value="ano">Ano</SelectItem>
-                                <SelectItem value="custom">Personalizado</SelectItem>
-                            </SelectContent>
-                        </Select>
-
-                        <MonthPicker
-                            value={date?.from}
-                            onChange={handleMonthChange}
-                            className="w-[120px]"
-                        />
-
-                        <div className="relative w-[320px]">
+                    <div id="filter-group" className="flex items-center gap-3 font-sans">
+                        {/* Search Input */}
+                        <div className="relative w-[250px]">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400" />
                             <Input
-                                placeholder="Buscar transações..."
+                                placeholder="Buscar"
                                 className="pl-9 h-10 font-inter"
                                 value={searchValue}
                                 onChange={(e) => setSearchValue(e.target.value)}
                             />
                         </div>
 
+                        {/* Period Select */}
+                        <Select
+                            value={range}
+                            onValueChange={handleRangeChange}
+                        >
+                            <SelectTrigger className="w-[80px] font-inter">
+                                <SelectValue placeholder="Período" />
+                            </SelectTrigger>
+                            <SelectContent className='bg-white'>
+                                <SelectItem value="dia" disabled>Dia</SelectItem>
+                                <SelectItem value="semana" disabled>Semana</SelectItem>
+                                <SelectItem value="mes">Mês</SelectItem>
+                                <SelectItem value="ano" disabled>Ano</SelectItem>
+                            </SelectContent>
+                        </Select>
+
+                        {/* Date Picker */}
+                        <AdaptiveDatePicker
+                            mode={range}
+                            value={date}
+                            onChange={handleDateChange}
+                            className="w-[150px]"
+                        />
+
+                        {/* Action Button */}
                         <Button onClick={() => setIsNewSheetOpen(true)} className="font-inter font-medium">
                             <Plus className="h-4 w-4 mr-2" />
                             Adicionar
@@ -211,7 +204,7 @@ export default function TransactionsClient({ initialData }: TransactionsClientPr
                     </div>
 
                     {/* Container da Tabela (Área E) - Scroll Interno */}
-                    <div className="flex-1 min-h-0 bg-white rounded-2xl border border-zinc-200 shadow-sm flex flex-col relative font-sans">
+                    <div id="data-table-wrapper" className="flex-1 min-h-0 bg-white rounded-[16px] border border-zinc-200 shadow-sm flex flex-col relative overflow-hidden font-sans">
                         {isPending && initialData.length === 0 ? (
                             <div className="flex-1 flex flex-col items-center justify-center">
                                 <Loader2 className="h-8 w-8 animate-spin text-zinc-400 mb-4" />

@@ -471,8 +471,8 @@ export function TransactionForm({ open, transaction, onSuccess, onCancel }: Tran
                                             <FormLabel className="text-sm font-semibold text-zinc-900 font-sans">Data de Vencimento</FormLabel>
                                             <FormControl>
                                                 <DatePicker
-                                                    date={field.value}
-                                                    onDateChange={field.onChange}
+                                                    value={field.value}
+                                                    onChange={field.onChange}
                                                     className="rounded-xl px-4 py-6 font-sans"
                                                 />
                                             </FormControl>
@@ -489,8 +489,8 @@ export function TransactionForm({ open, transaction, onSuccess, onCancel }: Tran
                                             <FormLabel className="text-sm font-semibold text-zinc-900 font-sans">Data de Pagamento</FormLabel>
                                             <FormControl>
                                                 <DatePicker
-                                                    date={field.value}
-                                                    onDateChange={field.onChange}
+                                                    value={field.value}
+                                                    onChange={field.onChange}
                                                     className="rounded-xl px-4 py-6 font-sans"
                                                 />
                                             </FormControl>

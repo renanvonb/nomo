@@ -2,11 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { PageHeader } from '@/components/shared/page-header'
 
-const financeLinks = [
-    { label: 'Resumo', href: '/financeiro/resumo' },
-    { label: 'Transações', href: '/financeiro/transacoes' },
-    { label: 'Investimentos', href: '/financeiro/investimentos' },
-]
+
 
 export default async function FinanceLayout({
     children,
@@ -23,7 +19,7 @@ export default async function FinanceLayout({
     return (
         <div className="flex flex-col h-screen overflow-hidden bg-zinc-50 font-sans">
             {/* Área B - Top App Bar (Sempre Visível) */}
-            <PageHeader links={financeLinks} />
+            <PageHeader links={[]} />
 
             {/* Área C, D e E - Conteúdo Principal */}
             <main className="flex-1 flex flex-col overflow-hidden">

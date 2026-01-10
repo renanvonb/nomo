@@ -14,7 +14,7 @@ import {
     parseISO
 } from 'date-fns'
 
-export type TimeRange = 'dia' | 'semana' | 'mes' | 'ano' | 'custom'
+export type TimeRange = 'dia' | 'semana' | 'mes' | 'ano'
 
 interface GetTransactionsParams {
     range: TimeRange
@@ -37,21 +37,22 @@ export async function getTransactions({ range, startDate, endDate }: GetTransact
     const referenceDate = startDate ? parseISO(startDate) : new Date()
 
     // Lógica de intervalos
-    if (range === 'dia') {
+    if (startDate && endDate) {
+        // Use custom date range if both are provided
+        start = startOfDay(parseISO(startDate))
+        end = endOfDay(parseISO(endDate))
+    } else if (range === 'dia') {
         start = startOfDay(referenceDate)
         end = endOfDay(referenceDate)
     } else if (range === 'semana') {
-        start = startOfWeek(referenceDate, { weekStartsOn: 1 })
-        end = endOfWeek(referenceDate, { weekStartsOn: 1 })
+        start = startOfWeek(referenceDate, { weekStartsOn: 0 })
+        end = endOfWeek(referenceDate, { weekStartsOn: 0 })
     } else if (range === 'mes') {
         start = startOfMonth(referenceDate)
         end = endOfMonth(referenceDate)
     } else if (range === 'ano') {
         start = startOfYear(referenceDate)
         end = endOfYear(referenceDate)
-    } else if (range === 'custom' && startDate && endDate) {
-        start = startOfDay(parseISO(startDate))
-        end = endOfDay(parseISO(endDate))
     } else {
         start = startOfMonth(referenceDate)
         end = endOfMonth(referenceDate)

@@ -1,3 +1,5 @@
+"use client"
+
 import * as React from "react"
 import { PageShell } from "@/components/shared/page-shell"
 import { TrendingUp, Plus } from "lucide-react"
@@ -20,7 +22,6 @@ export default function InvestimentosPage() {
                 title: "Módulo de Investimentos",
                 description: "Em breve você poderá consolidar todos os seus ativos em um só lugar.",
                 actionText: "Ver demonstração",
-                onAction: () => console.log("Ver demonstração clicado"),
             }}
         >
             <div className="flex-1 flex items-center justify-center">

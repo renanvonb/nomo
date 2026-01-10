@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { cn } from '@/lib/utils'
-import { Wallet, FileText, LogOut, User, Menu, Settings } from 'lucide-react'
+import { LayoutDashboard, ArrowRightLeft, TrendingUp, UserPlus, LogOut, User, Menu, Settings } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { signOut } from '@/app/actions/auth'
 import { useSidebar } from '@/hooks/use-sidebar-state'
@@ -25,18 +25,30 @@ interface SidebarProps {
     }
 }
 
-const modules = [
+const menuItems = [
     {
-        name: 'Financeiro',
-        href: '/financeiro/transacoes',
-        icon: Wallet,
-        pattern: /^\/financeiro/,
+        label: 'Dashboard',
+        href: '/dashboard',
+        icon: LayoutDashboard,
+        disabled: true,
     },
     {
-        name: 'Documentos',
-        href: '/documentos',
-        icon: FileText,
-        pattern: /^\/documentos/,
+        label: 'Transações',
+        href: '/financeiro/transacoes',
+        icon: ArrowRightLeft,
+        active: true,
+    },
+    {
+        label: 'Investimentos',
+        href: '/financeiro/investimentos',
+        icon: TrendingUp,
+        disabled: true,
+    },
+    {
+        label: 'Cadastros',
+        href: '/cadastros',
+        icon: UserPlus,
+        disabled: true,
     },
 ]
 
@@ -62,34 +74,36 @@ export function AppSidebar({ user }: SidebarProps) {
                 <Menu className="h-5 w-5" />
             </button>
 
-            <aside className={cn(
+            <aside id="main-sidebar" className={cn(
                 "fixed left-0 top-0 z-40 h-screen transition-all duration-300 border-r border-zinc-800 bg-zinc-950 flex flex-col font-sans",
                 isOpen ? "w-64" : "w-0 -translate-x-full md:w-20 md:translate-x-0"
             )}>
                 <div className={cn(
-                    "p-8 h-24 flex items-center transition-all duration-300",
-                    !isOpen && "md:p-0 md:justify-center"
+                    "h-16 flex items-center border-b border-zinc-800 transition-all duration-300",
+                    isOpen ? "px-4" : "md:px-0 md:justify-center"
                 )}>
                     <span className="font-jakarta font-bold text-2xl text-white tracking-tight">
                         {isOpen ? ".wallet" : "."}
                     </span>
                 </div>
 
-                <nav className="flex-1 px-4 space-y-1 overflow-hidden">
-                    {modules.map((module) => {
-                        const isActive = module.pattern.test(pathname)
-                        const Icon = module.icon
+                <nav className="flex-1 p-4 space-y-1 overflow-hidden">
+                    {menuItems.map((item) => {
+                        const isActive = item.active || (pathname.startsWith(item.href) && item.href !== '/dashboard' && item.href !== '/cadastros')
+                        const Icon = item.icon
 
                         return (
                             <Link
-                                key={module.name}
-                                href={module.href}
-                                title={module.name}
+                                key={item.label}
+                                href={item.disabled ? '#' : item.href}
+                                title={item.label}
+                                aria-disabled={item.disabled}
                                 className={cn(
                                     'flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 group',
                                     isActive
                                         ? 'bg-zinc-900 text-zinc-50 shadow-sm'
-                                        : 'text-zinc-400 hover:text-zinc-50 hover:bg-zinc-900/50'
+                                        : 'text-zinc-400 hover:text-zinc-50 hover:bg-zinc-900/50',
+                                    item.disabled && "opacity-50 cursor-not-allowed pointer-events-none"
                                 )}
                             >
                                 <Icon className={cn(
@@ -101,7 +115,7 @@ export function AppSidebar({ user }: SidebarProps) {
                                     "transition-all duration-300 whitespace-nowrap",
                                     !isOpen && "md:opacity-0 md:translate-x-4"
                                 )}>
-                                    {module.name}
+                                    {item.label}
                                 </span>
                             </Link>
                         )
