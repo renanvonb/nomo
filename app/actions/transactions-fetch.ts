@@ -14,7 +14,7 @@ import {
     parseISO
 } from 'date-fns'
 
-export type TimeRange = 'dia' | 'semana' | 'mes' | 'ano'
+export type TimeRange = 'dia' | 'semana' | 'mes' | 'ano' | 'custom'
 
 interface GetTransactionsParams {
     range: TimeRange
