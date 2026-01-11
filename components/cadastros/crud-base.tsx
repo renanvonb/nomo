@@ -54,8 +54,8 @@ export interface CrudBaseProps<T> {
     data: T[];
     loading: boolean;
     onRefresh: () => Promise<void>;
-    onCreate: (item: any) => Promise<void>;
-    onUpdate: (id: string, item: any) => Promise<void>;
+    onCreate: (item: any) => Promise<any>;
+    onUpdate: (id: string, item: any) => Promise<any>;
     onDelete: (id: string) => Promise<void>;
     renderRow: (item: T) => React.ReactNode;
     getItemId: (item: T) => string;
