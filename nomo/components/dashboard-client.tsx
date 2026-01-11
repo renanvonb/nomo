@@ -7,7 +7,7 @@ import { useRouter, useSearchParams } from "next/navigation"
 import { format, startOfMonth, endOfMonth, parseISO, startOfDay, endOfDay } from "date-fns"
 import { ptBR } from "date-fns/locale"
 
-import { TransactionSummaryCards } from "@/components/shared/transaction-summary-cards"
+import { TransactionSummaryCards } from "@/components/transaction-summary-cards"
 import { TimeRange } from "@/app/actions/transactions-fetch"
 import { Eye, EyeOff, Search } from "lucide-react"
 import { Button } from "@/components/ui/button"

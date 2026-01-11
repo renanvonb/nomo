@@ -78,6 +78,7 @@ type TransactionFormValues = z.infer<typeof transactionSchema>
 export interface TransactionFormProps {
     open?: boolean
     transaction?: Transaction | null
+    defaultType?: "revenue" | "expense" | "investment"
     onSuccess?: () => void
     onCancel?: () => void
 }
@@ -94,7 +95,7 @@ const parseCurrencyBR = (value: string) => {
     return Number(cleanValue) / 100
 }
 
-export function TransactionForm({ open, transaction, onSuccess, onCancel }: TransactionFormProps) {
+export function TransactionForm({ open, transaction, defaultType = "expense", onSuccess, onCancel }: TransactionFormProps) {
     const [isPending, startTransition] = React.useTransition()
     const [showDeleteDialog, setShowDeleteDialog] = React.useState(false)
     const [paymentMethods, setPaymentMethods] = React.useState<PaymentMethod[]>([])
@@ -109,7 +110,7 @@ export function TransactionForm({ open, transaction, onSuccess, onCancel }: Tran
         defaultValues: {
             description: "",
             amount: 0,
-            type: "expense",
+            type: defaultType,
             payee_id: "",
             payment_method_id: "",
             classification: "necessary",
@@ -169,9 +170,24 @@ export function TransactionForm({ open, transaction, onSuccess, onCancel }: Tran
         }
     }, [transaction, open, reset])
 
-    // Load initial data
+    // Reset/Initialize form when opening
     React.useEffect(() => {
-        if (open) {
+        if (open && !transaction) {
+            // New transaction: Reset to default type
+            reset({
+                description: "",
+                amount: 0,
+                type: defaultType,
+                payee_id: "",
+                payment_method_id: "",
+                classification: "necessary",
+                category_id: "",
+                subcategory_id: "",
+                due_date: new Date(),
+                payment_date: undefined,
+                is_installment: false,
+            })
+            // Load initial data
             const loadData = async () => {
                 const [methods, pays, cats] = await Promise.all([
                     getPaymentMethods(),
@@ -184,7 +200,7 @@ export function TransactionForm({ open, transaction, onSuccess, onCancel }: Tran
             }
             loadData()
         }
-    }, [open])
+    }, [open, defaultType, transaction, reset])
 
     // Load subcategories when category changes
     React.useEffect(() => {
@@ -270,7 +286,14 @@ export function TransactionForm({ open, transaction, onSuccess, onCancel }: Tran
         <SheetContent className="w-[600px] sm:max-w-[600px] flex flex-col p-0 gap-0">
             <SheetHeader className="p-6 pb-4 border-b">
                 <SheetTitle className="text-2xl font-bold text-zinc-950 font-jakarta">
-                    {isEditMode ? "Editar transação" : "Nova transação"}
+                    {isEditMode
+                        ? "Editar transação"
+                        : type === 'revenue'
+                            ? "Nova receita"
+                            : type === 'expense'
+                                ? "Nova despesa"
+                                : "Novo investimento"
+                    }
                 </SheetTitle>
                 <SheetDescription className="text-zinc-500 font-sans">
                     {isEditMode ? "Atualize os dados da transação" : "Preencha os dados da nova transação"}
@@ -281,22 +304,8 @@ export function TransactionForm({ open, transaction, onSuccess, onCancel }: Tran
                 <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col flex-1 min-h-0">
                     <div className="flex-1 overflow-y-auto p-6">
                         <div className="space-y-6">
-                            {/* Tabs de Tipo */}
-                            <FormField
-                                control={form.control}
-                                name="type"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <Tabs value={field.value} onValueChange={field.onChange}>
-                                            <TabsList className="grid w-full grid-cols-3">
-                                                <TabsTrigger value="revenue">Receita</TabsTrigger>
-                                                <TabsTrigger value="expense">Despesa</TabsTrigger>
-                                                <TabsTrigger value="investment">Investimento</TabsTrigger>
-                                            </TabsList>
-                                        </Tabs>
-                                    </FormItem>
-                                )}
-                            />
+                            {/* Campo de Tipo (Oculto ou Removido da UI, mantido no estado) */}
+                            {/* Tabs Deletadas - O tipo agora vem do Dropdown externo */}
 
                             {/* Descrição */}
                             <FormField

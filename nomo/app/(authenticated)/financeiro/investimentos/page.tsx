@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { PageShell } from "@/components/shared/page-shell"
+import { PageShell } from "@/components/page-shell"
 import { TrendingUp, Plus } from "lucide-react"
 import { Button } from "@/components/ui/button"
 

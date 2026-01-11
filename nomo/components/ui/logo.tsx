@@ -25,7 +25,7 @@ export function Logo({ variant = "full", size = 32, className }: LogoProps) {
             >
                 <Image
                     src="/brand/logo-symbol.png"
-                    alt=".wallet Label"
+                    alt="Sollyd Logo"
                     width={size}
                     height={size}
                     className={cn(
@@ -47,7 +47,7 @@ export function Logo({ variant = "full", size = 32, className }: LogoProps) {
                         marginTop: '2px'
                     }}
                 >
-                    .wallet
+                    Sollyd
                 </span>
             )}
         </div>

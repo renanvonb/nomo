@@ -28,7 +28,7 @@ const typeIconMap = {
 export const columns: ColumnDef<Transaction>[] = [
     {
         accessorKey: "description",
-        header: "Descrição",
+        header: () => <div className="min-w-[200px]">Descrição</div>,
         cell: ({ row }) => {
             const type = row.original.type as keyof typeof typeIconMap
             const { icon: Icon, color } = typeIconMap[type]
@@ -44,7 +44,7 @@ export const columns: ColumnDef<Transaction>[] = [
     {
         id: "payee",
         accessorFn: (row) => row.payees?.name,
-        header: "Favorecido",
+        header: () => <div className="min-w-[150px]">Favorecido</div>,
         cell: ({ row }) => {
             const payee = row.original.payees?.name
             return payee ? (
@@ -57,7 +57,7 @@ export const columns: ColumnDef<Transaction>[] = [
     {
         id: "category",
         accessorFn: (row) => row.categories?.name,
-        header: "Categoria",
+        header: () => <div className="min-w-[150px]">Categoria</div>,
         cell: ({ row }) => {
             const category = row.original.categories?.name
             return category ? (
@@ -69,7 +69,7 @@ export const columns: ColumnDef<Transaction>[] = [
     },
     {
         accessorKey: "payment_date",
-        header: "Pagamento",
+        header: () => <div className="min-w-[100px]">Pagamento</div>,
         cell: ({ row }) => {
             const date = row.getValue("payment_date") as string | null
             if (!date) return <span className="text-sm text-muted-foreground">-</span>
@@ -99,7 +99,7 @@ export const columns: ColumnDef<Transaction>[] = [
                     : "text-blue-600"
 
             return (
-                <div className={`text-sm font-semibold ${colorClass}`}>
+                <div className={`text-sm font-semibold min-w-[120px] ${colorClass}`}>
                     {formatted}
                 </div>
             )
@@ -107,7 +107,7 @@ export const columns: ColumnDef<Transaction>[] = [
     },
     {
         id: "status",
-        header: "Status",
+        header: () => <div className="w-[120px]">Status</div>,
         cell: ({ row }) => {
             const isPaid = !!row.original.payment_date
             const dueDate = row.original.due_date
@@ -127,7 +127,11 @@ export const columns: ColumnDef<Transaction>[] = [
                 status = "Pendente"
             }
 
-            return <StatusIndicator status={status} />
+            return (
+                <div className="w-[120px]">
+                    <StatusIndicator status={status} />
+                </div>
+            )
         },
     },
 ]

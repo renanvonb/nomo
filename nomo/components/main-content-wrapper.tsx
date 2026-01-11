@@ -9,7 +9,7 @@ export function MainContentWrapper({ children }: { children: React.ReactNode }) 
     return (
         <main
             className={cn(
-                "flex-1 transition-all duration-300 flex flex-col h-screen overflow-hidden border-l border-zinc-200",
+                "flex-1 transition-all duration-300 flex flex-col h-screen overflow-hidden border-l border-zinc-200 animate-in fade-in slide-in-from-bottom-4 duration-500",
                 isOpen ? "ml-64" : "ml-0 md:ml-20"
             )}
         >

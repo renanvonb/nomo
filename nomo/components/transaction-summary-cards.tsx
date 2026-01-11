@@ -2,7 +2,8 @@
 
 import { Card } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
-import { ArrowUpCircle, ArrowDownCircle, PieChart, Wallet } from "lucide-react"
+import { Badge } from "@/components/ui/badge"
+import { ArrowUpRight, ArrowDownRight, TrendingUp, Wallet } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useVisibility } from "@/hooks/use-visibility-state"
 
@@ -30,34 +31,48 @@ export function TransactionSummaryCards({ totals, isLoading }: TransactionSummar
         }).format(value)
     }
 
+    const getPercentage = (value: number) => {
+        if (totals.income === 0) return 0
+        // Use absolute values to avoid negative percentages if logic changes
+        return Math.round((Math.abs(value) / totals.income) * 100)
+    }
+
     const cards = [
         {
             label: "Receitas",
             value: totals.income,
-            icon: ArrowUpCircle,
+            icon: ArrowUpRight,
             color: "text-emerald-600",
-            bgColor: "bg-emerald-100",
+            bgIcon: "bg-emerald-100",
+            hoverGradient: "from-emerald-500/20",
+            hasBadge: false,
         },
         {
             label: "Despesas",
-            value: totals.expense * -1,
-            icon: ArrowDownCircle,
+            value: totals.expense,
+            icon: ArrowDownRight,
             color: "text-rose-600",
-            bgColor: "bg-rose-100",
+            bgIcon: "bg-rose-100",
+            hoverGradient: "from-rose-500/20",
+            hasBadge: true,
         },
         {
             label: "Investimentos",
-            value: totals.investment * -1,
-            icon: PieChart,
+            value: totals.investment,
+            icon: TrendingUp,
             color: "text-blue-600",
-            bgColor: "bg-blue-100",
+            bgIcon: "bg-blue-100",
+            hoverGradient: "from-blue-500/20",
+            hasBadge: true,
         },
         {
             label: "Saldo Total",
             value: totals.balance,
             icon: Wallet,
-            color: "text-zinc-600",
-            bgColor: "bg-zinc-100",
+            color: "text-[#00685C]", // Sollyd Brand Color
+            bgIcon: "bg-[#00685C]/10",
+            hoverGradient: "from-[#00685C]/20",
+            hasBadge: true,
         },
     ]
 
@@ -67,16 +82,31 @@ export function TransactionSummaryCards({ totals, isLoading }: TransactionSummar
                 <Card
                     key={index}
                     className={cn(
-                        "p-6 border-zinc-200 bg-white rounded-2xl transition-all duration-200 hover:shadow-md hover:border-zinc-300",
+                        "group relative overflow-hidden border-zinc-200 bg-white rounded-[20px] p-6 transition-all duration-300",
                         isLoading && "pointer-events-none"
                     )}
                 >
-                    <div className="flex flex-col gap-4">
-                        <span className="text-zinc-500 font-semibold font-sans tracking-tight">
-                            {card.label}
-                        </span>
+                    {/* Hover Effect - Radial Gradient Blur */}
+                    <div
+                        className={cn(
+                            "absolute -top-10 -right-10 w-32 h-32 bg-gradient-to-br to-transparent blur-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none",
+                            card.hoverGradient
+                        )}
+                    />
 
-                        <div className="flex items-center justify-between">
+                    <div className="relative z-10 flex flex-col gap-4">
+                        {/* Header: Label (Left) + Icon (Right) */}
+                        <div className="flex items-start justify-between">
+                            <span className="text-zinc-500 font-semibold font-sans tracking-tight text-sm mt-1">
+                                {card.label}
+                            </span>
+                            <div className={cn("p-2 rounded-full transition-transform duration-300 group-hover:scale-110", card.bgIcon)}>
+                                <card.icon className={cn("h-5 w-5", card.color)} />
+                            </div>
+                        </div>
+
+                        {/* Content: Value + Badge */}
+                        <div className="flex items-end gap-3">
                             {isLoading ? (
                                 <Skeleton className="h-8 w-32" />
                             ) : (
@@ -85,9 +115,15 @@ export function TransactionSummaryCards({ totals, isLoading }: TransactionSummar
                                 </div>
                             )}
 
-                            <div className={cn("p-2 rounded-full", card.bgColor, "flex-none")}>
-                                <card.icon className={cn("h-5 w-5", card.color)} />
-                            </div>
+                            {/* Percentage Badge */}
+                            {!isLoading && card.hasBadge && isVisible && (
+                                <Badge
+                                    variant="secondary"
+                                    className="mb-1 pointer-events-none bg-zinc-100 text-zinc-600 hover:bg-zinc-100"
+                                >
+                                    {getPercentage(card.value)}%
+                                </Badge>
+                            )}
                         </div>
                     </div>
                 </Card>

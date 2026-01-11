@@ -17,7 +17,7 @@ const jakarta = Plus_Jakarta_Sans({
 });
 
 export const metadata: Metadata = {
-    title: ".wallet | Gestão Financeira Inteligente",
+    title: "Sollyd",
     description: "Plataforma de gestão financeira, jurídica e de documentos com foco em eficiência.",
 };
 

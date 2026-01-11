@@ -5,15 +5,15 @@ import { useTransition } from "react"
 import { DateRange } from "react-day-picker"
 import { useRouter, useSearchParams } from "next/navigation"
 
-import { TransactionFilters } from "@/components/shared/transaction-filters"
-import { TransactionTable } from "@/components/shared/transaction-table"
-import { TransactionSummaryCards } from "@/components/shared/transaction-summary-cards"
-import { TransactionForm } from "@/components/shared/transaction-form"
-import { TransactionDetailsDialog } from "@/components/shared/transaction-details-dialog"
+import { TransactionFilters } from "@/components/transaction-filters"
+import { TransactionTable } from "@/components/transaction-table"
+import { TransactionSummaryCards } from "@/components/transaction-summary-cards"
+import { TransactionForm } from "@/components/transaction-form"
+import { TransactionDetailsDialog } from "@/components/transaction-details-dialog"
 import { TransactionsTableSkeleton } from "@/components/ui/skeletons"
 import { Sheet } from "@/components/ui/sheet"
 import { TimeRange } from "@/app/actions/transactions-fetch"
-import { Loader2, Plus, Search } from "lucide-react"
+import { Loader2, Plus, Search, ChevronDown } from "lucide-react"
 import type { Transaction } from "@/app/(authenticated)/financeiro/transacoes/components/columns"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -24,6 +24,12 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select"
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import { AdaptiveDatePicker } from "@/components/ui/adaptive-date-picker"
 
 interface TransactionsClientProps {
@@ -38,6 +44,12 @@ export default function TransactionsClient({ initialData }: TransactionsClientPr
     const [isDetailsDialogOpen, setIsDetailsDialogOpen] = React.useState(false)
     const [isEditSheetOpen, setIsEditSheetOpen] = React.useState(false)
     const [isNewSheetOpen, setIsNewSheetOpen] = React.useState(false)
+    const [newTransactionType, setNewTransactionType] = React.useState<"revenue" | "expense" | "investment">("expense")
+
+    const handleNewTransaction = (type: "revenue" | "expense" | "investment") => {
+        setNewTransactionType(type)
+        setIsNewSheetOpen(true)
+    }
 
     // Search Debounce state
     const [searchValue, setSearchValue] = React.useState(searchParams.get('q') || "")
@@ -195,18 +207,33 @@ export default function TransactionsClient({ initialData }: TransactionsClientPr
                             className="w-[150px]"
                         />
 
-                        {/* 4. Add Button */}
-                        <Button onClick={() => setIsNewSheetOpen(true)} className="font-inter font-medium">
-                            <Plus className="h-4 w-4 mr-2" />
-                            Adicionar
-                        </Button>
+                        {/* 4. Add Button -> Dropdown */}
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button className="font-inter font-medium">
+                                    Adicionar
+                                    <ChevronDown className="h-4 w-4 ml-2" />
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="w-[160px] bg-white">
+                                <DropdownMenuItem onClick={() => handleNewTransaction('revenue')} className="cursor-pointer">
+                                    Receita
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => handleNewTransaction('expense')} className="cursor-pointer">
+                                    Despesa
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => handleNewTransaction('investment')} className="cursor-pointer">
+                                    Investimento
+                                </DropdownMenuItem>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
                     </div>
                 </div>
 
 
 
-                {/* Wrapper de Cards e Tabela com Gap de 16px (gap-4) */}
-                <div className="flex-1 flex flex-col gap-4 overflow-hidden">
+                {/* Wrapper de Cards e Tabela com Gap de 32px (gap-8) */}
+                <div className="flex-1 flex flex-col gap-8 overflow-hidden">
                     {/* Grid de Totalizadores (KPIs) - Área D */}
                     <div className="flex-none font-sans">
                         <TransactionSummaryCards totals={totals} isLoading={isPending} />
@@ -235,6 +262,7 @@ export default function TransactionsClient({ initialData }: TransactionsClientPr
                     <Sheet open={isNewSheetOpen} onOpenChange={setIsNewSheetOpen}>
                         <TransactionForm
                             open={isNewSheetOpen}
+                            defaultType={newTransactionType}
                             onSuccess={() => {
                                 handleSuccess()
                                 setIsNewSheetOpen(false)

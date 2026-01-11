@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import Image from 'next/image'
 import { usePathname } from 'next/navigation'
 import { cn } from '@/lib/utils'
 import { LayoutDashboard, ArrowRightLeft, TrendingUp, UserPlus, LogOut, User, Menu, Settings } from 'lucide-react'
@@ -77,12 +78,28 @@ export function AppSidebar({ user }: SidebarProps) {
                 isOpen ? "w-64" : "w-0 -translate-x-full md:w-20 md:translate-x-0"
             )}>
                 <div className={cn(
-                    "h-16 flex items-center border-b border-zinc-800 transition-all duration-300",
-                    isOpen ? "px-4" : "md:px-0 md:justify-center"
+                    "flex items-center transition-all duration-300",
+                    isOpen ? "p-6" : "h-16 md:px-0 md:justify-center"
                 )}>
-                    <span className="font-jakarta font-bold text-2xl text-white tracking-tight">
-                        {isOpen ? ".wallet" : "."}
-                    </span>
+                    <div className="flex items-center gap-2">
+                        {/* Symbol */}
+                        <div className="relative h-8 w-8 shrink-0">
+                            <Image
+                                src="/brand/symbol.png"
+                                alt="Sollyd Symbol"
+                                fill
+                                className="object-contain" // Pode precisar de 'brightness-0 invert' se for preto no fundo preto
+                            />
+                        </div>
+
+                        {/* Text (Only if Open) */}
+                        <span className={cn(
+                            "font-jakarta font-bold text-2xl text-white tracking-tight transition-all duration-300 whitespace-nowrap overflow-hidden",
+                            !isOpen && "w-0 opacity-0 md:hidden"
+                        )}>
+                            Sollyd
+                        </span>
+                    </div>
                 </div>
 
                 <nav className="flex-1 p-4 space-y-1 overflow-hidden">
@@ -131,8 +148,8 @@ export function AppSidebar({ user }: SidebarProps) {
                                 )}
                             >
                                 <Avatar className="h-9 w-9 shrink-0 border border-zinc-800">
-                                    <AvatarImage src={`https://ui-avatars.com/api/?name=${userName}&background=random`} />
-                                    <AvatarFallback className="bg-zinc-800 text-zinc-400">
+                                    {/* <AvatarImage src={user.user_metadata?.avatar_url} /> */}
+                                    <AvatarFallback className="bg-[#00685C] text-white font-medium">
                                         {userName.substring(0, 2).toUpperCase()}
                                     </AvatarFallback>
                                 </Avatar>

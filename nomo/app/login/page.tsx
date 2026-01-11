@@ -84,6 +84,15 @@ export default function LoginPage() {
             <div className="flex-1 md:w-[60%] md:flex-none flex flex-col items-center justify-center p-8 md:p-12 lg:p-16 bg-white relative">
                 <div className="w-full flex flex-col items-center">
                     <div className="w-full max-w-[320px] flex flex-col items-center text-center">
+                        {/* Brand Symbol */}
+                        <div className="relative h-10 w-10 mb-4">
+                            <Image
+                                src="/brand/symbol.png"
+                                alt="Sollyd"
+                                fill
+                                className="object-contain"
+                            />
+                        </div>
                         <h1 className="text-2xl font-bold tracking-tight text-foreground font-jakarta mb-2">
                             Bem-vindo! <span className="font-['Apple_Color_Emoji',_'Segoe_UI_Emoji',_'Segoe_UI_Symbol',_cursive]">👋🏻</span>
                         </h1>
@@ -215,7 +224,7 @@ export default function LoginPage() {
 
                 {/* Brand Logo in top-left of the card */}
                 <div className="absolute top-6 left-6 z-20">
-                    <span className="text-2xl font-bold font-jakarta tracking-tight text-white">.wallet</span>
+                    <span className="text-2xl font-bold font-jakarta tracking-tight text-white">Sollyd</span>
                 </div>
 
                 {/* Bottom Gradient Overlay */}
@@ -232,7 +241,7 @@ export default function LoginPage() {
                 {/* Footer Info */}
                 <div className="absolute bottom-6 left-6 z-20">
                     <p className="font-inter text-[14px] text-white/80 font-medium">
-                        © 2025 Wallet. Todos os direitos reservados
+                        © 2025 Sollyd. Todos os direitos reservados
                     </p>
                 </div>
             </div>

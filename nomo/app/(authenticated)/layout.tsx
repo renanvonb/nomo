@@ -1,8 +1,8 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
-import { AppSidebar } from '@/components/shared/app-sidebar'
+import { AppSidebar } from '@/components/app-sidebar'
 import { SidebarProvider } from '@/hooks/use-sidebar-state'
-import { MainContentWrapper } from '@/components/shared/main-content-wrapper'
+import { MainContentWrapper } from '@/components/main-content-wrapper'
 
 import { VisibilityProvider } from '@/hooks/use-visibility-state'
 

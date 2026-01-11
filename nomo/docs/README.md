@@ -1,4 +1,4 @@
-# .wallet
+# Sollyd
 
 SaaS de gestão financeira, jurídica e de documentos.
 

@@ -1,5 +1,5 @@
 import { Suspense } from "react"
-import DashboardClient from "@/components/shared/dashboard-client"
+import DashboardClient from "@/components/dashboard-client"
 import { getTransactions, TimeRange } from "@/app/actions/transactions-fetch"
 import { TableSkeleton } from "@/components/ui/skeletons"
 
