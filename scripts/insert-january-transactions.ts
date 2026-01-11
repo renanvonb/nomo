@@ -92,6 +92,11 @@ async function insertTransactions() {
         categoriaData = newCat
     }
 
+    if (!categoriaData) {
+        console.error('❌ Erro: Não foi possível obter ou criar a categoria MORADIA')
+        return
+    }
+
     categoriasMap.set('MORADIA', categoriaData.id)
     console.log('✅ Categoria MORADIA:', categoriaData.id)
 
@@ -118,6 +123,11 @@ async function insertTransactions() {
                 continue
             }
             payeeData = newPayee
+        }
+
+        if (!payeeData) {
+            console.error(`❌ Erro: Não foi possível obter ou criar o favorecido ${nome}`)
+            continue
         }
 
         favorecidosMap.set(nome, payeeData.id)

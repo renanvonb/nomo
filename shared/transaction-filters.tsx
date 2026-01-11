@@ -4,13 +4,13 @@ import * as React from "react"
 import { DateRange } from "react-day-picker"
 
 import { Button } from "@/components/ui/button"
-import { DateFilterPicker } from "@/components/shared/date-filter-picker"
+import { DateFilterPicker } from "@/components/date-filter-picker"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import {
     Sheet,
     SheetTrigger,
 } from "@/components/ui/sheet"
-import { TransactionForm } from "@/components/shared/transaction-form"
+import { TransactionForm } from "@/components/transaction-form"
 import { TimeRange } from "@/app/actions/transactions-fetch"
 
 interface TransactionFiltersProps {
@@ -74,5 +74,3 @@ export function TransactionFilters({
         </div>
     )
 }
-
-S

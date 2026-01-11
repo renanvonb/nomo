@@ -1,7 +1,8 @@
 "use client"
 
 import { DataTable } from "@/app/(authenticated)/financeiro/transacoes/components/data-table"
-import { columns, Transaction } from "@/app/(authenticated)/financeiro/transacoes/components/columns"
+import { columns } from "@/app/(authenticated)/financeiro/transacoes/components/columns"
+import { Transaction } from "@/types/transaction"
 
 interface TransactionTableProps {
     data: any[]

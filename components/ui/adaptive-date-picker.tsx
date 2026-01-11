@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/popover"
 import { MonthPicker } from "@/components/ui/month-picker"
 
-type PeriodMode = "dia" | "semana" | "mes" | "ano"
+type PeriodMode = "dia" | "semana" | "mes" | "ano" | "custom"
 
 interface AdaptiveDatePickerProps {
     mode: PeriodMode
@@ -54,6 +54,7 @@ export function AdaptiveDatePicker({ mode, value, onChange, className }: Adaptiv
             setDate(now)
             onChange?.({ from: yearStart, to: yearEnd })
         }
+        // For 'custom' mode, don't auto-set dates
     }, [mode]) // Only run when mode changes
 
     // Format display based on mode
@@ -73,6 +74,9 @@ export function AdaptiveDatePicker({ mode, value, onChange, className }: Adaptiv
         }
         if (mode === "ano") {
             return format(date, "yyyy", { locale: ptBR })
+        }
+        if (mode === "custom") {
+            return format(date, "dd/MM/yyyy", { locale: ptBR })
         }
         return "Selecionar"
     }

@@ -40,7 +40,7 @@ export function IncomeExpenseChart({ data }: IncomeExpenseChartProps) {
                             />
                             <Tooltip
                                 cursor={{ fill: '#f4f4f5' }}
-                                formatter={(value: number) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value)}
+                                formatter={(value: number | undefined) => value ? new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value) : 'R$ 0,00'}
                                 contentStyle={{ borderRadius: '12px', border: '1px solid #e4e4e7' }}
                             />
                             <Bar dataKey="receitas" fill="#10b981" radius={[4, 4, 0, 0]} barSize={32} />

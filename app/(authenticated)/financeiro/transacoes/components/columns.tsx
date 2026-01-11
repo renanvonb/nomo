@@ -5,19 +5,7 @@ import { Badge } from "@/components/ui/badge"
 import { StatusIndicator } from "@/components/ui/status-indicator"
 import { ArrowUpCircle, ArrowDownCircle, PieChart } from "lucide-react"
 import { useVisibility } from "@/hooks/use-visibility-state"
-
-export type Transaction = {
-    id: string
-    description: string
-    amount: number
-    type: "revenue" | "expense" | "investment"
-    due_date: string
-    payment_date: string | null
-    payees?: { name: string } | null
-    payment_methods?: { name: string } | null
-    categories?: { name: string } | null
-    subcategories?: { name: string } | null
-}
+import { Transaction } from "@/types/transaction"
 
 const typeIconMap = {
     revenue: { icon: ArrowUpCircle, color: "text-emerald-600" },

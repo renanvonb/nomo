@@ -8,6 +8,7 @@ const COLORS = ["#10b981", "#3b82f6", "#f59e0b", "#ef4444", "#8b5cf6", "#ec4899"
 interface CategoryData {
     name: string
     value: number
+    [key: string]: string | number
 }
 
 interface CategoryExpensesChartProps {
@@ -40,7 +41,7 @@ export function CategoryExpensesChart({ data }: CategoryExpensesChartProps) {
                                 ))}
                             </Pie>
                             <Tooltip
-                                formatter={(value: number) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value)}
+                                formatter={(value: number | undefined) => value ? new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value) : 'R$ 0,00'}
                                 contentStyle={{ borderRadius: '12px', border: '1px solid #e4e4e7' }}
                             />
                         </PieChart>

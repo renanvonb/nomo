@@ -117,7 +117,7 @@ export function MonthlyBalanceChart({ data }: MonthlyBalanceChartProps) {
                 titleFont: {
                     family: 'Plus Jakarta Sans',
                     size: 13,
-                    weight: '600' as const,
+                    weight: 600,
                 },
                 bodyFont: {
                     family: 'Inter',
