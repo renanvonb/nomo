@@ -4,6 +4,8 @@ import { AppSidebar } from '@/components/shared/app-sidebar'
 import { SidebarProvider } from '@/hooks/use-sidebar-state'
 import { MainContentWrapper } from '@/components/shared/main-content-wrapper'
 
+import { VisibilityProvider } from '@/hooks/use-visibility-state'
+
 export default async function AuthenticatedLayout({
     children,
 }: {
@@ -18,12 +20,14 @@ export default async function AuthenticatedLayout({
 
     return (
         <SidebarProvider>
-            <div className="flex h-screen overflow-hidden bg-zinc-50">
-                <AppSidebar user={user} />
-                <MainContentWrapper>
-                    {children}
-                </MainContentWrapper>
-            </div>
+            <VisibilityProvider>
+                <div className="flex h-screen overflow-hidden bg-zinc-50">
+                    <AppSidebar user={user} />
+                    <MainContentWrapper>
+                        {children}
+                    </MainContentWrapper>
+                </div>
+            </VisibilityProvider>
         </SidebarProvider>
     )
 }

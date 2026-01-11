@@ -28,15 +28,13 @@ interface SidebarProps {
 const menuItems = [
     {
         label: 'Dashboard',
-        href: '/dashboard',
+        href: '/financeiro/resumo',
         icon: LayoutDashboard,
-        disabled: true,
     },
     {
         label: 'Transações',
         href: '/financeiro/transacoes',
         icon: ArrowRightLeft,
-        active: true,
     },
     {
         label: 'Investimentos',
@@ -89,7 +87,7 @@ export function AppSidebar({ user }: SidebarProps) {
 
                 <nav className="flex-1 p-4 space-y-1 overflow-hidden">
                     {menuItems.map((item) => {
-                        const isActive = item.active || (pathname.startsWith(item.href) && item.href !== '/dashboard' && item.href !== '/cadastros')
+                        const isActive = pathname === item.href || pathname.startsWith(item.href + '/')
                         const Icon = item.icon
 
                         return (

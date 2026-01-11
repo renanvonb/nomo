@@ -4,6 +4,7 @@ import { ColumnDef } from "@tanstack/react-table"
 import { Badge } from "@/components/ui/badge"
 import { StatusIndicator } from "@/components/ui/status-indicator"
 import { ArrowUpCircle, ArrowDownCircle, PieChart } from "lucide-react"
+import { useVisibility } from "@/hooks/use-visibility-state"
 
 export type Transaction = {
     id: string
@@ -79,14 +80,17 @@ export const columns: ColumnDef<Transaction>[] = [
     {
         accessorKey: "amount",
         header: "Valor",
-        cell: ({ row }) => {
+        cell: function AmountCell({ row }) {
+            const { isVisible } = useVisibility()
             const amount = parseFloat(row.getValue("amount"))
             const type = row.original.type
 
-            const formatted = new Intl.NumberFormat("pt-BR", {
-                style: "currency",
-                currency: "BRL",
-            }).format(amount)
+            const formatted = isVisible
+                ? new Intl.NumberFormat("pt-BR", {
+                    style: "currency",
+                    currency: "BRL",
+                }).format(amount)
+                : "R$ ••••"
 
             const colorClass = type === "revenue"
                 ? "text-emerald-600"

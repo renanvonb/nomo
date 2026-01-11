@@ -4,6 +4,7 @@ import { Card } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 import { ArrowUpCircle, ArrowDownCircle, PieChart, Wallet } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { useVisibility } from "@/hooks/use-visibility-state"
 
 interface SummaryTotals {
     income: number
@@ -18,7 +19,11 @@ interface TransactionSummaryCardsProps {
 }
 
 export function TransactionSummaryCards({ totals, isLoading }: TransactionSummaryCardsProps) {
+    const { isVisible } = useVisibility()
+
     const formatValue = (value: number) => {
+        if (!isVisible) return "R$ ••••"
+
         return new Intl.NumberFormat("pt-BR", {
             style: "currency",
             currency: "BRL",
