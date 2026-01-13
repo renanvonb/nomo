@@ -1,12 +1,28 @@
 'use client';
 
 import { useState, useEffect, forwardRef, useImperativeHandle } from 'react';
-import { Plus, Pencil, Trash2, Loader2, Wallet as WalletIcon } from 'lucide-react';
+import {
+    Plus,
+    Pencil,
+    Trash2,
+    Loader2,
+    Wallet as WalletIcon,
+    Landmark,
+    CreditCard,
+    Banknote,
+    PiggyBank,
+    Briefcase,
+    CircleDollarSign,
+    Check
+} from 'lucide-react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
+
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Card, CardContent } from '@/components/ui/card';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { EmptyState } from '@/components/ui/empty-state';
 import {
     Dialog,
     DialogContent,
@@ -25,6 +41,14 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import {
+    Form,
+    FormControl,
+    FormField,
+    FormItem,
+    FormLabel,
+    FormMessage,
+} from '@/components/ui/form';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import {
@@ -35,29 +59,66 @@ import {
     deleteWallet,
 } from '@/lib/supabase/cadastros';
 
-export interface WalletsContentRef {
-    openCreateDialog: () => void;
+// Constantes de Ícones e Cores
+const ICONS = [
+    { id: 'wallet', icon: WalletIcon, label: 'Carteira' },
+    { id: 'bank', icon: Landmark, label: 'Banco' },
+    { id: 'card', icon: CreditCard, label: 'Cartão' },
+    { id: 'cash', icon: Banknote, label: 'Dinheiro' },
+    { id: 'savings', icon: PiggyBank, label: 'Poupança' },
+    { id: 'business', icon: Briefcase, label: 'Negócios' },
+    { id: 'investment', icon: CircleDollarSign, label: 'Investimento' },
+];
+
+const COLORS = [
+    { name: 'Sollyd', value: '#00665C' },
+    { name: 'Preto', value: '#09090b' },
+    { name: 'Azul', value: '#2563eb' },
+    { name: 'Vermelho', value: '#dc2626' },
+    { name: 'Laranja', value: '#d97706' },
+    { name: 'Roxo', value: '#7c3aed' },
+    { name: 'Verde', value: '#16a34a' },
+];
+
+const walletSchema = z.object({
+    name: z.string().min(1, 'Nome é obrigatório'),
+    color: z.string().min(1, 'Cor é obrigatória'),
+    icon: z.string().min(1, 'Ícone é obrigatório'),
+});
+
+type WalletFormValues = z.infer<typeof walletSchema>;
+
+interface WalletsContentProps {
+    isOpen: boolean;
+    onOpenChange: (open: boolean) => void;
 }
 
-export const WalletsContent = forwardRef<WalletsContentRef>((props, ref) => {
+export function WalletsContent({ isOpen, onOpenChange }: WalletsContentProps) {
     const [wallets, setWallets] = useState<Wallet[]>([]);
     const [loading, setLoading] = useState(true);
-    const [isDialogOpen, setIsDialogOpen] = useState(false);
+    // isDialogOpen removed
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
     const [editingWallet, setEditingWallet] = useState<Wallet | null>(null);
     const [deletingId, setDeletingId] = useState<string | null>(null);
-    const [formData, setFormData] = useState({ name: '', logo_url: '' });
-    const [formErrors, setFormErrors] = useState<Record<string, string>>({});
-    const [submitting, setSubmitting] = useState(false);
+
+    const form = useForm<WalletFormValues>({
+        resolver: zodResolver(walletSchema),
+        defaultValues: {
+            name: '',
+            color: COLORS[0].value,
+            icon: 'wallet',
+        },
+    });
+
+    const { formState: { isSubmitting }, reset } = form;
 
     const fetchWallets = async () => {
-        setLoading(true);
         try {
             const data = await getWallets();
             setWallets(data);
         } catch (error) {
             console.error('Erro ao carregar carteiras:', error);
-            toast.error('Erro ao carregar carteiras');
+            toast.error('Erro ao carregar as carteiras.');
         } finally {
             setLoading(false);
         }
@@ -67,281 +128,274 @@ export const WalletsContent = forwardRef<WalletsContentRef>((props, ref) => {
         fetchWallets();
     }, []);
 
-    useEffect(() => {
-        if (!isDialogOpen) {
-            setFormData({ name: '', logo_url: '' });
-            setFormErrors({});
-            setEditingWallet(null);
-        }
-    }, [isDialogOpen]);
-
+    // Atualiza o form quando entra em modo edição
     useEffect(() => {
         if (editingWallet) {
-            setFormData({
+            reset({
                 name: editingWallet.name,
-                logo_url: editingWallet.logo_url || '',
+                color: editingWallet.color || COLORS[0].value,
+                icon: editingWallet.icon || 'wallet',
+            });
+        } else {
+            reset({
+                name: '',
+                color: COLORS[0].value,
+                icon: 'wallet',
             });
         }
-    }, [editingWallet]);
+    }, [editingWallet, reset]);
 
-    const validateForm = (): boolean => {
-        const errors: Record<string, string> = {};
-        if (!formData.name.trim()) {
-            errors.name = 'Nome é obrigatório';
+    // Reset form when dialog closes
+    useEffect(() => {
+        if (!isOpen) {
+            setEditingWallet(null);
+            form.reset({
+                name: '',
+                color: COLORS[0].value,
+                icon: 'wallet',
+            });
         }
-        setFormErrors(errors);
-        return Object.keys(errors).length === 0;
-    };
+    }, [isOpen, form]);
 
-    const handleSubmit = async () => {
-        if (!validateForm()) return;
-
-        setSubmitting(true);
+    const onSubmit = async (values: WalletFormValues) => {
         try {
             if (editingWallet) {
-                await updateWallet(editingWallet.id, formData);
+                await updateWallet(editingWallet.id, values);
                 toast.success('Carteira atualizada com sucesso!');
             } else {
-                await createWallet(formData);
+                await createWallet(values);
                 toast.success('Carteira criada com sucesso!');
             }
-            setIsDialogOpen(false);
-            await fetchWallets();
+            onOpenChange(false);
+            fetchWallets();
         } catch (error: any) {
-            toast.error(error.message || 'Erro ao salvar carteira');
-        } finally {
-            setSubmitting(false);
+            console.error('Erro ao salvar carteira:', error);
+            toast.error('Erro ao salvar carteira. Tente novamente.');
         }
     };
 
     const handleDelete = async () => {
         if (!deletingId) return;
-
-        setSubmitting(true);
         try {
             await deleteWallet(deletingId);
+            setWallets((prev) => prev.filter((w) => w.id !== deletingId));
             toast.success('Carteira excluída com sucesso!');
             setIsDeleteDialogOpen(false);
-            setDeletingId(null);
-            await fetchWallets();
         } catch (error: any) {
-            toast.error(error.message || 'Erro ao excluir carteira');
-        } finally {
-            setSubmitting(false);
+            console.error('Erro ao excluir:', error);
+            toast.error('Erro ao excluir a carteira.');
         }
     };
 
-    // Expor método para abrir dialog de criação
-    useImperativeHandle(ref, () => ({
-        openCreateDialog: () => {
-            setEditingWallet(null);
-            setFormData({ name: '', logo_url: '' });
-            setIsDialogOpen(true);
-        },
-    }));
-
-    const openCreateDialog = () => {
-        setEditingWallet(null);
-        setFormData({ name: '', logo_url: '' });
-        setIsDialogOpen(true);
-    };
-
-    const openEditDialog = (wallet: Wallet) => {
-        setEditingWallet(wallet);
-        setIsDialogOpen(true);
-    };
-
-    const openDeleteDialog = (id: string) => {
-        setDeletingId(id);
-        setIsDeleteDialogOpen(true);
+    const getIconComponent = (iconName: string) => {
+        const item = ICONS.find((i) => i.id === iconName);
+        return item ? item.icon : WalletIcon;
     };
 
     return (
         <>
-            {/* Content */}
             {loading ? (
-                <div className="flex items-center justify-center py-12">
+                <div className="flex justify-center py-12">
                     <Loader2 className="h-8 w-8 animate-spin text-[#00665C]" />
                 </div>
             ) : wallets.length === 0 ? (
-                <Card>
-                    <CardContent className="flex flex-col items-center justify-center py-12">
-                        <div className="rounded-full bg-blue-100 p-3 mb-4">
-                            <WalletIcon className="h-6 w-6 text-blue-600" />
-                        </div>
-                        <p className="text-zinc-500 text-center">
-                            Nenhuma carteira cadastrada.<br />
-                            Adicione sua primeira carteira!
-                        </p>
-                    </CardContent>
-                </Card>
-            ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {wallets.map((wallet) => (
-                        <Card
-                            key={wallet.id}
-                            className="hover:shadow-md transition-shadow cursor-pointer group"
+                <EmptyState
+                    variant="outlined"
+                    size="lg"
+                    icon={WalletIcon}
+                    title="Nenhuma carteira cadastrada"
+                    description="Crie carteiras para organizar suas finanças (Ex: NuBank, Itaú, Dinheiro)."
+                    action={
+                        <Button
+                            variant="outline"
+                            onClick={() => onOpenChange(true)}
+                            className="font-inter"
                         >
-                            <CardContent className="p-6">
-                                <div className="flex items-start justify-between">
-                                    <div className="flex items-center gap-3 flex-1">
-                                        <div className="rounded-full bg-blue-100 p-2.5">
-                                            <Avatar className="h-8 w-8">
-                                                {wallet.logo_url && (
-                                                    <AvatarImage src={wallet.logo_url} alt={wallet.name} />
-                                                )}
-                                                <AvatarFallback className="bg-blue-600 text-white font-semibold text-sm">
-                                                    {wallet.name.charAt(0).toUpperCase()}
-                                                </AvatarFallback>
-                                            </Avatar>
-                                        </div>
-                                        <div className="flex-1 min-w-0">
-                                            <h3 className="font-semibold text-zinc-900 truncate">
-                                                {wallet.name}
-                                            </h3>
-                                            <p className="text-sm text-zinc-500">
-                                                {wallet.logo_url ? 'Com logotipo' : 'Sem logotipo'}
-                                            </p>
+                            <Plus className="mr-2 h-4 w-4" />
+                            Adicionar
+                        </Button>
+                    }
+                    className="flex-1 bg-card"
+                />
+            ) : (
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                    {wallets.map((wallet) => {
+                        const Icon = getIconComponent(wallet.icon || 'wallet');
+                        const cardColor = wallet.color || COLORS[0].value;
+
+                        return (
+                            <Card
+                                key={wallet.id}
+                                className="group cursor-pointer hover:shadow-md transition-all"
+                                onClick={() => {
+                                    setEditingWallet(wallet);
+                                    onOpenChange(true);
+                                }}
+                            >
+                                <CardContent className="p-6">
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-4">
+                                            <div
+                                                className="flex h-12 w-12 items-center justify-center rounded-2xl transition-colors"
+                                                style={{
+                                                    backgroundColor: `${cardColor}20`,
+                                                    color: cardColor
+                                                }}
+                                            >
+                                                <Icon className="h-6 w-6" />
+                                            </div>
+                                            <div>
+                                                <h3 className="font-semibold text-zinc-900">{wallet.name}</h3>
+                                                <p className="text-xs text-zinc-500 font-medium">
+                                                    {wallet.user_id ? 'Particular' : 'Sistema'}
+                                                </p>
+                                            </div>
                                         </div>
                                     </div>
-                                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                        <Button
-                                            variant="ghost"
-                                            size="icon"
-                                            onClick={() => openEditDialog(wallet)}
-                                            className="h-8 w-8"
-                                        >
-                                            <Pencil className="h-4 w-4" />
-                                        </Button>
-                                        <Button
-                                            variant="ghost"
-                                            size="icon"
-                                            onClick={() => openDeleteDialog(wallet.id)}
-                                            className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50"
-                                        >
-                                            <Trash2 className="h-4 w-4" />
-                                        </Button>
-                                    </div>
-                                </div>
-                            </CardContent>
-                        </Card>
-                    ))}
+                                </CardContent>
+                            </Card>
+                        );
+                    })}
                 </div>
             )}
 
-            {/* Create/Edit Dialog */}
-            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+            {/* Dialog de Criação/Edição com Form */}
+            <Dialog open={isOpen} onOpenChange={onOpenChange}>
                 <DialogContent className="sm:max-w-[500px]">
                     <DialogHeader>
-                        <DialogTitle className="font-jakarta">
-                            {editingWallet ? 'Editar Carteira' : 'Nova Carteira'}
-                        </DialogTitle>
+                        <DialogTitle>{editingWallet ? 'Editar Carteira' : 'Nova Carteira'}</DialogTitle>
                         <DialogDescription>
-                            {editingWallet
-                                ? 'Atualize as informações da carteira.'
-                                : 'Preencha os dados para criar uma nova carteira.'}
+                            Preencha as informações da carteira.
                         </DialogDescription>
                     </DialogHeader>
 
-                    <div className="space-y-4 py-4">
-                        <div className="space-y-2">
-                            <Label
-                                htmlFor="name"
-                                className={cn(
-                                    'text-sm font-medium',
-                                    formErrors.name && 'text-red-600'
-                                )}
-                            >
-                                Nome <span className="text-red-600">*</span>
-                            </Label>
-                            <Input
-                                id="name"
-                                placeholder="Ex: Conta Corrente, Poupança"
-                                value={formData.name}
-                                onChange={(e) =>
-                                    setFormData({ ...formData, name: e.target.value })
-                                }
-                                className={cn(
-                                    formErrors.name && 'border-red-500 focus-visible:ring-red-500'
+                    <Form {...form}>
+                        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 py-4">
+                            <FormField
+                                control={form.control}
+                                name="name"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Nome da Carteira</FormLabel>
+                                        <FormControl>
+                                            <Input placeholder="Ex: NuBank, Cofre, Investimentos..." {...field} />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
                                 )}
                             />
-                            {formErrors.name && (
-                                <p className="text-sm text-red-600">{formErrors.name}</p>
-                            )}
-                        </div>
 
-                        <div className="space-y-2">
-                            <Label htmlFor="logo_url">URL do Logotipo</Label>
-                            <Input
-                                id="logo_url"
-                                type="url"
-                                placeholder="https://exemplo.com/logo.png"
-                                value={formData.logo_url}
-                                onChange={(e) =>
-                                    setFormData({ ...formData, logo_url: e.target.value })
-                                }
+                            <FormField
+                                control={form.control}
+                                name="color"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Cor de Identificação</FormLabel>
+                                        <FormControl>
+                                            <div className="flex flex-wrap gap-3">
+                                                {COLORS.map((color) => (
+                                                    <button
+                                                        key={color.value}
+                                                        type="button"
+                                                        className={cn(
+                                                            "h-8 w-8 rounded-full transition-all ring-offset-2 focus:outline-none focus:ring-2 disabled:opacity-50",
+                                                            field.value === color.value
+                                                                ? "ring-2 ring-zinc-950 scale-110"
+                                                                : "hover:scale-110"
+                                                        )}
+                                                        style={{ backgroundColor: color.value }}
+                                                        onClick={() => field.onChange(color.value)}
+                                                        title={color.name}
+                                                    />
+                                                ))}
+                                            </div>
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
                             />
-                        </div>
-                    </div>
 
-                    <DialogFooter>
-                        <Button
-                            variant="outline"
-                            onClick={() => setIsDialogOpen(false)}
-                            disabled={submitting}
-                        >
-                            Cancelar
-                        </Button>
-                        <Button
-                            onClick={handleSubmit}
-                            disabled={submitting}
-                            className="bg-[#00665C] hover:bg-[#00665C]/90"
-                        >
-                            {submitting ? (
-                                <>
-                                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                                    Salvando...
-                                </>
-                            ) : (
-                                'Salvar'
-                            )}
-                        </Button>
-                    </DialogFooter>
+                            <FormField
+                                control={form.control}
+                                name="icon"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Ícone</FormLabel>
+                                        <FormControl>
+                                            <div className="grid grid-cols-4 sm:grid-cols-7 gap-2">
+                                                {ICONS.map((item) => {
+                                                    const isSelected = field.value === item.id;
+                                                    return (
+                                                        <button
+                                                            key={item.id}
+                                                            type="button"
+                                                            onClick={() => field.onChange(item.id)}
+                                                            className={cn(
+                                                                "flex h-10 w-10 items-center justify-center rounded-xl border transition-all hover:bg-zinc-50 focus:outline-none focus:ring-2 focus:ring-zinc-950 focus:ring-offset-2",
+                                                                isSelected
+                                                                    ? "border-[#00665C] bg-[#00665C]/10 text-[#00665C] ring-1 ring-[#00665C]"
+                                                                    : "border-zinc-200 text-zinc-500"
+                                                            )}
+                                                            title={item.label}
+                                                        >
+                                                            <item.icon className="h-5 w-5" />
+                                                        </button>
+                                                    );
+                                                })}
+                                            </div>
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+
+                            <DialogFooter className={editingWallet ? "sm:justify-between" : ""}>
+                                {editingWallet && (
+                                    <Button
+                                        type="button"
+                                        variant="ghost"
+                                        className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                                        onClick={() => {
+                                            setDeletingId(editingWallet.id);
+                                            onOpenChange(false);
+                                            setIsDeleteDialogOpen(true);
+                                        }}
+                                    >
+                                        Excluir
+                                    </Button>
+                                )}
+                                <div className="flex gap-2">
+                                    <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={isSubmitting}>
+                                        Cancelar
+                                    </Button>
+                                    <Button type="submit" disabled={isSubmitting} className="bg-[#00665C] hover:bg-[#00665C]/90">
+                                        {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                        Salvar
+                                    </Button>
+                                </div>
+                            </DialogFooter>
+                        </form>
+                    </Form>
                 </DialogContent>
             </Dialog>
 
-            {/* Delete Confirmation Dialog */}
+            {/* Dialog de Exclusão */}
             <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
                 <AlertDialogContent>
                     <AlertDialogHeader>
-                        <AlertDialogTitle className="font-jakarta">
-                            Confirmar exclusão
-                        </AlertDialogTitle>
+                        <AlertDialogTitle>Excluir Carteira</AlertDialogTitle>
                         <AlertDialogDescription>
                             Tem certeza que deseja excluir esta carteira? Esta ação não pode ser desfeita.
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                        <AlertDialogCancel disabled={submitting}>Cancelar</AlertDialogCancel>
-                        <AlertDialogAction
-                            onClick={handleDelete}
-                            disabled={submitting}
-                            className="bg-red-600 hover:bg-red-700"
-                        >
-                            {submitting ? (
-                                <>
-                                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                                    Excluindo...
-                                </>
-                            ) : (
-                                'Excluir'
-                            )}
+                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleDelete} className="bg-red-600 hover:bg-red-700">
+                            Excluir
                         </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
         </>
     );
-});
-
-WalletsContent.displayName = 'WalletsContent';
+}

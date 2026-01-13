@@ -73,28 +73,25 @@ export function AppSidebar({ user }: SidebarProps) {
             </button>
 
             <aside id="main-sidebar" className={cn(
-                "fixed left-0 top-0 z-40 h-screen transition-all duration-300 border-r border-zinc-800 bg-zinc-950 flex flex-col font-sans",
+                "fixed left-0 top-0 z-40 h-screen transition-all duration-300 border-r border-white/5 bg-sidebar flex flex-col font-sans",
                 isOpen ? "w-64" : "w-0 -translate-x-full md:w-20 md:translate-x-0"
             )}>
-                <div className={cn(
-                    "flex items-center transition-all duration-300",
-                    isOpen ? "p-6" : "h-16 md:px-0 md:justify-center"
-                )}>
-                    <div className="flex items-center gap-2">
+                <div className="flex items-center h-16 px-6 transition-all duration-300">
+                    <div className="flex items-center">
                         {/* Symbol */}
                         <div className="relative h-8 w-8 shrink-0">
                             <Image
                                 src="/brand/symbol.png"
                                 alt="Sollyd Symbol"
                                 fill
-                                className="object-contain" // Pode precisar de 'brightness-0 invert' se for preto no fundo preto
+                                className="object-contain" // Original color
                             />
                         </div>
 
                         {/* Text (Only if Open) */}
                         <span className={cn(
                             "font-jakarta font-bold text-2xl text-white tracking-tight transition-all duration-300 whitespace-nowrap overflow-hidden",
-                            !isOpen && "w-0 opacity-0 md:hidden"
+                            isOpen ? "w-auto opacity-100 ml-3" : "w-0 opacity-0 ml-0"
                         )}>
                             Sollyd
                         </span>
@@ -103,7 +100,7 @@ export function AppSidebar({ user }: SidebarProps) {
 
                 <nav className="flex-1 p-4 space-y-1 overflow-hidden">
                     <div className={cn(
-                        "px-4 mb-2 text-xs font-semibold text-zinc-500 uppercase tracking-wider font-inter",
+                        "px-4 mb-2 text-xs font-semibold text-white/40 uppercase tracking-wider font-inter",
                         !isOpen && "hidden"
                     )}>
                         Financeiro
@@ -119,16 +116,17 @@ export function AppSidebar({ user }: SidebarProps) {
                                 title={item.label}
                                 aria-disabled={item.disabled}
                                 className={cn(
-                                    'flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 group',
+                                    'flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 group relative overflow-hidden',
                                     isActive
-                                        ? 'bg-zinc-900 text-zinc-50 shadow-sm'
-                                        : 'text-zinc-400 hover:text-zinc-50 hover:bg-zinc-900/50',
+                                        ? 'bg-sidebar-active text-white'
+                                        : 'text-sidebar-muted hover:text-white hover:bg-sidebar-hover',
                                     item.disabled && "opacity-50 cursor-not-allowed pointer-events-none"
                                 )}
                             >
+
                                 <Icon className={cn(
                                     "h-5 w-5 min-w-[20px] transition-colors",
-                                    isActive ? "text-white" : "text-zinc-400 group-hover:text-zinc-50"
+                                    isActive ? "text-white" : "text-sidebar-muted group-hover:text-white"
                                 )}
                                 />
                                 <span className={cn(
@@ -142,20 +140,20 @@ export function AppSidebar({ user }: SidebarProps) {
                     })}
                 </nav>
 
-                <div className="p-4 border-t border-zinc-900">
+                <div className="p-4 border-t border-white/5">
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                             <Button
                                 variant="ghost"
                                 className={cn(
-                                    "w-full flex items-center gap-3 px-2 h-auto py-2 hover:bg-zinc-900 rounded-xl transition-all duration-300",
+                                    "w-full flex items-center gap-3 px-2 h-auto py-2 hover:bg-sidebar-hover rounded-xl transition-all duration-300 text-sidebar-muted hover:text-white",
                                     !isOpen && "justify-center px-0"
                                 )}
                             >
-                                <Avatar className="h-9 w-9 shrink-0 border border-zinc-800">
+                                <Avatar className="h-9 w-9 shrink-0 border border-white/10">
                                     {/* <AvatarImage src={user.user_metadata?.avatar_url} /> */}
-                                    <AvatarFallback className="bg-[#00685C] text-white font-medium">
-                                        {userName.substring(0, 2).toUpperCase()}
+                                    <AvatarFallback className="bg-[#00665C] text-white font-medium">
+                                        {userName.charAt(0).toUpperCase()}
                                     </AvatarFallback>
                                 </Avatar>
                                 {isOpen && (
@@ -171,23 +169,23 @@ export function AppSidebar({ user }: SidebarProps) {
                             side="right"
                             align="end"
                             sideOffset={12}
-                            className="w-56 bg-zinc-950 border-zinc-800 text-zinc-200"
+                            className="w-56 bg-sidebar border-white/10 text-sidebar-muted"
                         >
-                            <DropdownMenuLabel className="font-normal border-b border-zinc-900 mb-1 pb-2">
+                            <DropdownMenuLabel className="font-normal border-b border-white/10 mb-1 pb-2">
                                 <div className="flex flex-col space-y-1">
                                     <p className="text-sm font-medium leading-none text-white">{userName}</p>
-                                    <p className="text-xs leading-none text-zinc-500 truncate">{user.email}</p>
+                                    <p className="text-xs leading-none text-sidebar-muted/70 truncate">{user.email}</p>
                                 </div>
                             </DropdownMenuLabel>
-                            <DropdownMenuItem className="cursor-pointer focus:bg-zinc-900 focus:text-white">
+                            <DropdownMenuItem className="cursor-pointer focus:bg-sidebar-hover focus:text-white hover:text-white">
                                 <User className="mr-2 h-4 w-4" />
                                 <span>Perfil</span>
                             </DropdownMenuItem>
-                            <DropdownMenuItem className="cursor-pointer focus:bg-zinc-900 focus:text-white">
+                            <DropdownMenuItem className="cursor-pointer focus:bg-sidebar-hover focus:text-white hover:text-white">
                                 <Settings className="mr-2 h-4 w-4" />
                                 <span>Configurações</span>
                             </DropdownMenuItem>
-                            <DropdownMenuSeparator className="bg-zinc-900" />
+                            <DropdownMenuSeparator className="bg-white/10" />
                             <DropdownMenuItem
                                 className="text-red-400 focus:text-red-400 focus:bg-red-950/20 cursor-pointer"
                                 onClick={() => signOut()}

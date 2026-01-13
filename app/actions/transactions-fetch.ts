@@ -69,9 +69,9 @@ export async function getTransactions({ range, startDate, endDate }: GetTransact
             subcategories(id, name)
         `)
         .eq('user_id', userId)
-        .gte('due_date', format(start, 'yyyy-MM-dd'))
-        .lte('due_date', format(end, 'yyyy-MM-dd'))
-        .order('due_date', { ascending: false })
+        .gte('competence_date', format(start, 'yyyy-MM-dd'))
+        .lte('competence_date', format(end, 'yyyy-MM-dd'))
+        .order('competence_date', { ascending: false })
         .order('created_at', { ascending: false })
 
     if (error) {

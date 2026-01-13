@@ -1,8 +1,24 @@
 'use server'
 
 import { createClient } from '@/lib/supabase/server'
-import { PaymentMethod, Category, Subcategory, Payee, Payer } from '@/types/transaction'
+import { PaymentMethod, Category, Subcategory, Payee, Payer, Wallet } from '@/types/transaction'
 import { unstable_noStore as noStore } from 'next/cache'
+
+export async function getWallets() {
+    noStore()
+    const supabase = createClient()
+    const { data, error } = await supabase
+        .from('wallets')
+        .select('*')
+        .order('name')
+
+    if (error) {
+        console.error('[getWallets] Error:', error)
+        return []
+    }
+
+    return (data || []) as Wallet[]
+}
 
 export async function getPaymentMethods() {
     noStore()
@@ -21,28 +37,27 @@ export async function getPaymentMethods() {
 }
 
 export async function getPayers() {
-    noStore()
-    const supabase = createClient()
-    const { data, error } = await supabase
-        .from('payers')
-        .select('*')
-        .order('name')
-
-    if (error) {
-        console.error('[getPayers] Error:', error)
-        return []
-    }
-
-    return (data || []) as Payer[]
+    return getPayees('payer');
 }
 
-export async function getPayees() {
+export async function getPayees(typeFilter?: 'payer' | 'favored') {
     noStore()
     const supabase = createClient()
-    const { data, error } = await supabase
+    const { data: { user } } = await supabase.auth.getUser()
+
+    if (!user) return []
+
+    let query = supabase
         .from('payees')
         .select('*')
+        .eq('user_id', user.id)
         .order('name')
+
+    if (typeFilter) {
+        query = query.or(`type.eq.${typeFilter},type.eq.both`)
+    }
+
+    const { data, error } = await query
 
     if (error) {
         console.error('[getPayees] Error:', error)

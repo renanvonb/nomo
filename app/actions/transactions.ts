@@ -11,7 +11,6 @@ const transactionSchema = z.object({
     amount: z.coerce.number().gt(0, "Valor deve ser maior que zero"),
     type: z.enum(["revenue", "expense", "investment"]),
     payee_id: z.preprocess(emptyToNull, z.string().uuid().optional().nullable()),
-    payer_id: z.preprocess(emptyToNull, z.string().uuid().optional().nullable()),
     payment_method_id: z.preprocess(emptyToNull, z.string().uuid().optional().nullable()),
     classification: z.enum(["essential", "necessary", "superfluous"]),
     category_id: z.preprocess(emptyToNull, z.string().uuid().optional().nullable()),
@@ -24,10 +23,11 @@ const transactionSchema = z.object({
     status: z.preprocess(emptyToNull, z.string().optional().nullable()),
     wallet_id: z.preprocess(emptyToNull, z.string().uuid().optional().nullable()),
 }).superRefine((data, ctx) => {
-    if (data.type === 'expense' && !data.payee_id) {
+    // Payee/Payer validation
+    if ((data.type === 'expense' || data.type === 'revenue') && !data.payee_id) {
         ctx.addIssue({
             code: z.ZodIssueCode.custom,
-            message: "Favorecido é obrigatório para despesas",
+            message: data.type === 'revenue' ? "Pagador é obrigatório" : "Favorecido é obrigatório",
             path: ["payee_id"],
         });
     }
@@ -52,8 +52,8 @@ export async function saveTransaction(formData: any) {
             description: validated.description,
             amount: validated.amount,
             type: validated.type,
-            payer_id: validated.type === 'revenue' ? validated.payer_id : null,
-            payee_id: validated.type === 'expense' ? validated.payee_id : null,
+            payer_id: null,
+            payee_id: validated.payee_id,
             payment_method_id: validated.payment_method_id,
             classification: validated.classification,
             category_id: validated.category_id,
@@ -141,8 +141,8 @@ export async function updateTransaction(id: string, formData: any) {
             description: validated.description,
             amount: validated.amount,
             type: validated.type,
-            payer_id: validated.type === 'revenue' ? (validated.payer_id || null) : null,
-            payee_id: validated.type === 'expense' ? (validated.payee_id || null) : null,
+            payer_id: null,
+            payee_id: validated.payee_id || null, // Ensure explicit null if undefined/empty
             payment_method_id: validated.payment_method_id || null,
             classification: validated.classification,
             category_id: validated.category_id || null,

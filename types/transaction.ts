@@ -33,6 +33,15 @@ export interface Subcategory {
     created_at: string;
 }
 
+export interface Wallet {
+    id: string;
+    name: string;
+    logo_url?: string;
+    color?: string;
+    icon?: string;
+    created_at: string;
+}
+
 export interface Transaction {
     id: string;
     user_id: string;
@@ -60,6 +69,7 @@ export interface Transaction {
     payment_methods?: PaymentMethod;
     categories?: Category;
     subcategories?: Subcategory;
+    wallets?: Wallet;
 }
 
 export interface CreateTransactionInput {

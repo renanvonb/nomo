@@ -8,6 +8,7 @@ import {
     Wallet, CreditCard, Smartphone
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { EmptyState } from '@/components/ui/empty-state';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -78,15 +79,17 @@ const ICONS = [
     { name: 'phone', label: 'Telefone', Icon: Smartphone },
 ];
 
-export interface PayeesContentRef {
-    openCreateDialog: () => void;
+export interface PayeesContentProps {
+    isOpen: boolean;
+    onOpenChange: (open: boolean) => void;
 }
 
-export const PayeesContent = forwardRef<PayeesContentRef>((props, ref) => {
+export function PayeesContent({ isOpen, onOpenChange }: PayeesContentProps) {
     const router = useRouter();
     const [payees, setPayees] = useState<Payee[]>([]);
     const [loading, setLoading] = useState(true);
-    const [isDialogOpen, setIsDialogOpen] = useState(false);
+
+    // isDialogOpen controlled by parent
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
     const [editingPayee, setEditingPayee] = useState<Payee | null>(null);
     const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -97,7 +100,7 @@ export const PayeesContent = forwardRef<PayeesContentRef>((props, ref) => {
     const fetchPayees = async () => {
         setLoading(true);
         try {
-            const data = await getPayees();
+            const data = await getPayees('favored');
             setPayees(data);
         } catch (error: any) {
             console.error('Erro ao carregar beneficiários:', error);
@@ -117,12 +120,12 @@ export const PayeesContent = forwardRef<PayeesContentRef>((props, ref) => {
     }, []);
 
     useEffect(() => {
-        if (!isDialogOpen) {
+        if (!isOpen) {
             setFormData({ name: '', color: 'zinc', icon: 'user' });
             setFormErrors({});
             setEditingPayee(null);
         }
-    }, [isDialogOpen]);
+    }, [isOpen]);
 
     useEffect(() => {
         if (editingPayee) {
@@ -149,13 +152,13 @@ export const PayeesContent = forwardRef<PayeesContentRef>((props, ref) => {
         setSubmitting(true);
         try {
             if (editingPayee) {
-                await updatePayee(editingPayee.id, formData);
+                await updatePayee(editingPayee.id, { ...formData, type: 'favored' });
                 toast.success('Beneficiário atualizado com sucesso!');
             } else {
-                await createPayee(formData);
+                await createPayee({ ...formData, type: 'favored' });
                 toast.success('Beneficiário criado com sucesso!');
             }
-            setIsDialogOpen(false);
+            onOpenChange(false);
             await fetchPayees();
         } catch (error: any) {
             if (error.message === 'Usuário não autenticado') {
@@ -175,10 +178,13 @@ export const PayeesContent = forwardRef<PayeesContentRef>((props, ref) => {
         setSubmitting(true);
         try {
             await deletePayee(deletingId);
+
+            // Atualizar estado local imediatamente
+            setPayees(prev => prev.filter(payee => payee.id !== deletingId));
+
             toast.success('Beneficiário excluído com sucesso!');
             setIsDeleteDialogOpen(false);
             setDeletingId(null);
-            await fetchPayees();
         } catch (error: any) {
             if (error.message === 'Usuário não autenticado') {
                 toast.error('Sessão expirada. Faça login novamente.');
@@ -193,7 +199,7 @@ export const PayeesContent = forwardRef<PayeesContentRef>((props, ref) => {
 
     const openEditDialog = (payee: Payee) => {
         setEditingPayee(payee);
-        setIsDialogOpen(true);
+        onOpenChange(true);
     };
 
     const openDeleteDialog = (id: string) => {
@@ -210,15 +216,6 @@ export const PayeesContent = forwardRef<PayeesContentRef>((props, ref) => {
         const color = COLORS.find(c => c.name === colorName);
         return color ? color.bg : 'bg-zinc-500';
     };
-
-    // Expor método para abrir dialog de criação
-    useImperativeHandle(ref, () => ({
-        openCreateDialog: () => {
-            setEditingPayee(null);
-            setFormData({ name: '', color: 'zinc', icon: 'user' });
-            setIsDialogOpen(true);
-        },
-    }));
 
     // Preview do badge
     const PreviewBadge = () => {
@@ -245,17 +242,24 @@ export const PayeesContent = forwardRef<PayeesContentRef>((props, ref) => {
                     <Loader2 className="h-8 w-8 animate-spin text-[#00665C]" />
                 </div>
             ) : payees.length === 0 ? (
-                <Card>
-                    <CardContent className="flex flex-col items-center justify-center py-12">
-                        <div className="rounded-full bg-purple-100 p-3 mb-4">
-                            <User className="h-6 w-6 text-purple-600" />
-                        </div>
-                        <p className="text-zinc-500 text-center">
-                            Nenhum beneficiário cadastrado.<br />
-                            Adicione seu primeiro beneficiário!
-                        </p>
-                    </CardContent>
-                </Card>
+                <EmptyState
+                    variant="outlined"
+                    size="lg"
+                    icon={User}
+                    title="Nenhum beneficiário cadastrado"
+                    description="Adicione seu primeiro beneficiário para registrar suas despesas"
+                    action={
+                        <Button
+                            variant="outline"
+                            onClick={() => onOpenChange(true)}
+                            className="font-inter"
+                        >
+                            <Plus className="h-4 w-4 mr-2" />
+                            Adicionar
+                        </Button>
+                    }
+                    className="flex-1 bg-card"
+                />
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {payees.map((payee) => {
@@ -292,7 +296,7 @@ export const PayeesContent = forwardRef<PayeesContentRef>((props, ref) => {
             )}
 
             {/* Create/Edit Dialog */}
-            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+            <Dialog open={isOpen} onOpenChange={onOpenChange}>
                 <DialogContent className="sm:max-w-[500px]">
                     <DialogHeader>
                         <DialogTitle className="font-jakarta">
@@ -397,7 +401,7 @@ export const PayeesContent = forwardRef<PayeesContentRef>((props, ref) => {
                                 onClick={() => {
                                     if (editingPayee) {
                                         openDeleteDialog(editingPayee.id);
-                                        setIsDialogOpen(false);
+                                        onOpenChange(false);
                                     }
                                 }}
                                 className="text-red-600 hover:text-red-700 hover:bg-red-50"
@@ -408,7 +412,7 @@ export const PayeesContent = forwardRef<PayeesContentRef>((props, ref) => {
                         <div className="flex gap-2">
                             <Button
                                 variant="outline"
-                                onClick={() => setIsDialogOpen(false)}
+                                onClick={() => onOpenChange(false)}
                                 disabled={submitting}
                             >
                                 Cancelar
@@ -464,6 +468,4 @@ export const PayeesContent = forwardRef<PayeesContentRef>((props, ref) => {
             </AlertDialog>
         </>
     );
-});
-
-PayeesContent.displayName = 'PayeesContent';
+}

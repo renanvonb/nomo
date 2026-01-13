@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState } from 'react';
 import { Search, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,17 +9,15 @@ import { WalletsContent } from '@/components/cadastros/wallets-content';
 import { PayersContent } from '@/components/cadastros/payers-content';
 import { PayeesContent } from '@/components/cadastros/payees-content';
 import { CategoriesContent } from '@/components/cadastros/categories-content';
-import { SubcategoriesContent } from '@/components/cadastros/subcategories-content';
 import { ClassificationsContent } from '@/components/cadastros/classifications-content';
 
-type TabType = 'carteiras' | 'pagadores' | 'beneficiarios' | 'categorias' | 'subcategorias' | 'classificacoes';
+type TabType = 'carteiras' | 'pagadores' | 'beneficiarios' | 'categorias' | 'classificacoes';
 
 const tabs = [
     { id: 'carteiras', label: 'Carteiras' },
     { id: 'pagadores', label: 'Pagadores' },
     { id: 'beneficiarios', label: 'Beneficiários' },
     { id: 'categorias', label: 'Categorias' },
-    { id: 'subcategorias', label: 'Subcategorias' },
     { id: 'classificacoes', label: 'Classificações' },
 ];
 
@@ -40,10 +38,6 @@ const tabTitles: Record<TabType, { title: string; description: string }> = {
         title: 'Categorias',
         description: 'Gerencie as categorias de receitas e despesas',
     },
-    subcategorias: {
-        title: 'Subcategorias',
-        description: 'Gerencie as subcategorias das suas despesas',
-    },
     classificacoes: {
         title: 'Classificações',
         description: 'Gerencie as classificações das suas despesas',
@@ -53,26 +47,31 @@ const tabTitles: Record<TabType, { title: string; description: string }> = {
 export default function CadastrosPage() {
     const [activeTab, setActiveTab] = useState<TabType>('carteiras');
     const [searchValue, setSearchValue] = useState('');
-
-    // Refs para controlar os dialogs dos componentes
-    const walletsRef = useRef<{ openCreateDialog: () => void }>(null);
-    const payersRef = useRef<{ openCreateDialog: () => void }>(null);
-    const payeesRef = useRef<{ openCreateDialog: () => void }>(null);
+    const [isCategoryDialogOpen, setIsCategoryDialogOpen] = useState(false);
+    const [isClassificationDialogOpen, setIsClassificationDialogOpen] = useState(false);
+    const [isWalletDialogOpen, setIsWalletDialogOpen] = useState(false);
+    const [isPayerDialogOpen, setIsPayerDialogOpen] = useState(false);
+    const [isPayeeDialogOpen, setIsPayeeDialogOpen] = useState(false);
 
     const currentTab = tabTitles[activeTab];
 
     const handleAddClick = () => {
         switch (activeTab) {
             case 'carteiras':
-                walletsRef.current?.openCreateDialog();
+                setIsWalletDialogOpen(true);
                 break;
             case 'pagadores':
-                payersRef.current?.openCreateDialog();
+                setIsPayerDialogOpen(true);
                 break;
             case 'beneficiarios':
-                payeesRef.current?.openCreateDialog();
+                setIsPayeeDialogOpen(true);
                 break;
-            // Adicionar outros casos conforme necessário
+            case 'categorias':
+                setIsCategoryDialogOpen(true);
+                break;
+            case 'classificacoes':
+                setIsClassificationDialogOpen(true);
+                break;
         }
     };
 
@@ -126,12 +125,11 @@ export default function CadastrosPage() {
 
                 {/* Content Area - Cards */}
                 <div className="flex-1 flex flex-col gap-8 overflow-auto">
-                    {activeTab === 'carteiras' && <WalletsContent ref={walletsRef} />}
-                    {activeTab === 'pagadores' && <PayersContent ref={payersRef} />}
-                    {activeTab === 'beneficiarios' && <PayeesContent ref={payeesRef} />}
-                    {activeTab === 'categorias' && <CategoriesContent />}
-                    {activeTab === 'subcategorias' && <SubcategoriesContent />}
-                    {activeTab === 'classificacoes' && <ClassificationsContent />}
+                    {activeTab === 'carteiras' && <WalletsContent isOpen={isWalletDialogOpen} onOpenChange={setIsWalletDialogOpen} />}
+                    {activeTab === 'pagadores' && <PayersContent isOpen={isPayerDialogOpen} onOpenChange={setIsPayerDialogOpen} />}
+                    {activeTab === 'beneficiarios' && <PayeesContent isOpen={isPayeeDialogOpen} onOpenChange={setIsPayeeDialogOpen} />}
+                    {activeTab === 'categorias' && <CategoriesContent isOpen={isCategoryDialogOpen} onOpenChange={setIsCategoryDialogOpen} />}
+                    {activeTab === 'classificacoes' && <ClassificationsContent isOpen={isClassificationDialogOpen} onOpenChange={setIsClassificationDialogOpen} />}
                 </div>
             </div>
         </div>

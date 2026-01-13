@@ -57,11 +57,12 @@ import {
 import { DatePicker } from "@/components/ui/date-picker"
 import { Badge } from "@/components/ui/badge"
 import { saveTransaction, updateTransaction, deleteTransaction } from "@/app/actions/transactions"
-import { getPaymentMethods, getPayees, getPayers, getCategories, getSubcategories } from "@/app/actions/transaction-data"
-import { PaymentMethod, Payee, Payer, Category, Subcategory } from "@/types/transaction"
+import { getPaymentMethods, getCategories, getSubcategories, getWallets } from "@/app/actions/transaction-data"
+import { usePayees } from "@/hooks/usePayees"
+import { PaymentMethod, Payee, Category, Subcategory, Wallet } from "@/types/transaction"
 import type { Transaction } from "@/types/transaction"
 import { toast } from "sonner"
-import { createPayer, createPayee } from "@/app/actions/contacts"
+import { createPayee } from "@/app/actions/contacts"
 import { Plus } from "lucide-react"
 
 const transactionSchema = z.object({
@@ -69,8 +70,7 @@ const transactionSchema = z.object({
     amount: z.number().gt(0, "Valor deve ser maior que zero"),
     type: z.enum(["revenue", "expense", "investment"]),
     wallet_id: z.string().optional(),
-    payee_id: z.string().optional(),
-    payer_id: z.string().optional(),
+    payee_id: z.string().optional(), // Validado no superRefine
     payment_method_id: z.string().optional(),
     classification: z.enum(["essential", "necessary", "superfluous"]).optional(),
     category_id: z.string().min(1, "Categoria é obrigatória"),
@@ -81,14 +81,15 @@ const transactionSchema = z.object({
     status: z.string().optional(),
     observation: z.string().optional(),
     is_installment: z.boolean(),
-}).refine((data) => {
-    if (data.type === 'expense' && !data.payee_id) return false
-    return true
-}, {
-    message: "Favorecido é obrigatório",
-    path: ["payee_id"],
+}).superRefine((data, ctx) => {
+    if ((data.type === 'revenue' || data.type === 'expense') && !data.payee_id) {
+        ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: data.type === 'revenue' ? "Pagador é obrigatório" : "Favorecido é obrigatório",
+            path: ["payee_id"],
+        })
+    }
 })
-
 
 
 type TransactionFormValues = z.infer<typeof transactionSchema>
@@ -117,14 +118,13 @@ export function TransactionForm({ open, transaction, defaultType = "expense", on
     const [isPending, startTransition] = React.useTransition()
     const [showDeleteDialog, setShowDeleteDialog] = React.useState(false)
     const [paymentMethods, setPaymentMethods] = React.useState<PaymentMethod[]>([])
-    const [payees, setPayees] = React.useState<Payee[]>([])
-    const [payers, setPayers] = React.useState<Payer[]>([])
+
     const [allCategories, setAllCategories] = React.useState<Category[]>([])
     const [subcategories, setSubcategories] = React.useState<Subcategory[]>([])
+    const [wallets, setWallets] = React.useState<Wallet[]>([])
     const [isLoadingData, setIsLoadingData] = React.useState(!!transaction)
 
     // Quick Create States
-    const [isCreatingPayer, setIsCreatingPayer] = React.useState(false)
     const [isCreatingPayee, setIsCreatingPayee] = React.useState(false)
     const [newEntityName, setNewEntityName] = React.useState("")
     const [isCreatingEntity, setIsCreatingEntity] = React.useState(false)
@@ -138,8 +138,7 @@ export function TransactionForm({ open, transaction, defaultType = "expense", on
             amount: 0,
             type: defaultType,
             wallet_id: "",
-            payee_id: "",
-            payer_id: "",
+            payee_id: "", // Unified field for both Payer and Payee
             payment_method_id: "",
             classification: "necessary",
             category_id: "",
@@ -153,28 +152,27 @@ export function TransactionForm({ open, transaction, defaultType = "expense", on
         },
     })
 
-    const { formState: { isDirty }, reset, watch } = form
+    const { formState: { isDirty, errors }, reset, watch, setValue } = form
     const type = watch("type")
+    const { payees, setPayees } = usePayees(type)
     const selectedCategoryId = watch("category_id")
 
     // Load transaction data when in edit mode
     React.useEffect(() => {
         if (transaction && open) {
             const loadTransactionData = async () => {
-                const [methods, pays, payersList, cats] = await Promise.all([
+                const [methods, cats, wals] = await Promise.all([
                     getPaymentMethods(),
-                    getPayees(),
-                    getPayers(),
-                    getCategories()
+                    getCategories(),
+                    getWallets()
                 ])
                 setPaymentMethods(methods)
-                setPayees(pays)
-                setPayers(payersList || [])
                 setAllCategories(cats)
+                setWallets(wals)
 
-                // Hybrid lookup with new separation logic
-                const payeeId = transaction.payee_id || (transaction.payees?.id) || ""
-                const payerId = transaction.payer_id || (transaction.payers?.id) || ""
+                // Hybrid lookup: try payee_id first, then fallback to payer_id or joined implementations
+                // Since we are migrating, we consolidate everything into payee_id UI field
+                const payeeId = transaction.payee_id || transaction.payer_id || (transaction.payees?.id) || (transaction.payers?.id) || ""
 
                 const methodId = transaction.payment_method_id || methods.find(m => m.name === transaction.payment_methods?.name)?.id || ""
                 const categoryId = transaction.category_id || cats.find(c => c.name === transaction.categories?.name)?.id || ""
@@ -193,7 +191,6 @@ export function TransactionForm({ open, transaction, defaultType = "expense", on
                     amount: transaction.amount,
                     type: transaction.type,
                     payee_id: payeeId,
-                    payer_id: payerId,
                     payment_method_id: methodId,
                     classification: transaction.classification || "necessary",
                     category_id: categoryId,
@@ -224,7 +221,6 @@ export function TransactionForm({ open, transaction, defaultType = "expense", on
                 amount: 0,
                 type: defaultType,
                 payee_id: "",
-                payer_id: "",
                 payment_method_id: "",
                 classification: "necessary",
                 category_id: "",
@@ -235,20 +231,18 @@ export function TransactionForm({ open, transaction, defaultType = "expense", on
                 observation: "",
                 competence_date: new Date(),
                 status: "pending",
-                wallet_id: "main",
+                wallet_id: "",
             })
             // Load initial data
             const loadData = async () => {
-                const [methods, pays, payersList, cats] = await Promise.all([
+                const [methods, cats, wals] = await Promise.all([
                     getPaymentMethods(),
-                    getPayees(),
-                    getPayers(),
-                    getCategories()
+                    getCategories(),
+                    getWallets()
                 ])
                 setPaymentMethods(methods)
-                setPayees(pays)
-                setPayers(payersList || [])
                 setAllCategories(cats)
+                setWallets(wals)
             }
             loadData()
         }
@@ -267,43 +261,23 @@ export function TransactionForm({ open, transaction, defaultType = "expense", on
         }
     }, [selectedCategoryId])
 
-    const handleCreatePayer = async () => {
-        if (!newEntityName.trim()) return
-        setIsCreatingEntity(true)
-        try {
-            const result = await createPayer(newEntityName)
-            if (result.success && result.data) {
-                setPayers(prev => [...prev, result.data].sort((a, b) => a.name.localeCompare(b.name)))
-                form.setValue("payer_id", result.data.id)
-                toast.success("Pagador criado com sucesso!")
-                setIsCreatingPayer(false)
-                setNewEntityName("")
-            } else {
-                toast.error(result.error || "Erro ao criar pagador")
-            }
-        } catch (error) {
-            toast.error("Erro ao criar pagador")
-        } finally {
-            setIsCreatingEntity(false)
-        }
-    }
-
-    const handleCreatePayee = async () => {
+    // Unified Create Contact
+    const handleCreateContact = async () => {
         if (!newEntityName.trim()) return
         setIsCreatingEntity(true)
         try {
             const result = await createPayee(newEntityName)
             if (result.success && result.data) {
-                setPayees(prev => [...prev, result.data].sort((a, b) => a.name.localeCompare(b.name)))
+                setPayees(prev => [...prev, result.data!].sort((a, b) => a.name.localeCompare(b.name)))
                 form.setValue("payee_id", result.data.id)
-                toast.success("Favorecido criado com sucesso!")
+                toast.success("Contato criado com sucesso!")
                 setIsCreatingPayee(false)
                 setNewEntityName("")
             } else {
-                toast.error(result.error || "Erro ao criar favorecido")
+                toast.error(result.error || "Erro ao criar contato")
             }
         } catch (error) {
-            toast.error("Erro ao criar favorecido")
+            toast.error("Erro ao criar contato")
         } finally {
             setIsCreatingEntity(false)
         }
@@ -443,9 +417,9 @@ export function TransactionForm({ open, transaction, defaultType = "expense", on
                                                     </SelectTrigger>
                                                 </FormControl>
                                                 <SelectContent className="bg-white border-zinc-200">
-                                                    <SelectItem value="main">Carteira Principal</SelectItem>
-                                                    <SelectItem value="nubank">NuBank</SelectItem>
-                                                    <SelectItem value="itau">Itaú</SelectItem>
+                                                    {wallets.map(wallet => (
+                                                        <SelectItem key={wallet.id} value={wallet.id}>{wallet.name}</SelectItem>
+                                                    ))}
                                                 </SelectContent>
                                             </Select>
                                             <FormMessage />
@@ -527,7 +501,10 @@ export function TransactionForm({ open, transaction, defaultType = "expense", on
                                             render={({ field }) => (
                                                 <FormItem className="space-y-2">
                                                     <FormLabel className="text-sm font-semibold text-zinc-900 font-sans">Categoria</FormLabel>
-                                                    <Select onValueChange={field.onChange} value={field.value}>
+                                                    <Select onValueChange={(val) => {
+                                                        field.onChange(val)
+                                                        form.setValue("subcategory_id", "")
+                                                    }} value={field.value}>
                                                         <FormControl>
                                                             <SelectTrigger className="rounded-xl px-4 py-6 border-zinc-200 font-sans">
                                                                 <SelectValue placeholder="Selecione" />
@@ -641,7 +618,7 @@ export function TransactionForm({ open, transaction, defaultType = "expense", on
                                     <div className="grid grid-cols-2 gap-4">
                                         <FormField
                                             control={form.control}
-                                            name="payer_id"
+                                            name="payee_id"
                                             render={({ field }) => (
                                                 <FormItem className="space-y-2">
                                                     <FormLabel className="text-sm font-semibold text-zinc-900 font-sans">Pagador</FormLabel>
@@ -653,8 +630,8 @@ export function TransactionForm({ open, transaction, defaultType = "expense", on
                                                                 </SelectTrigger>
                                                             </FormControl>
                                                             <SelectContent className="bg-white border-zinc-200 max-h-[300px]">
-                                                                {payers?.map(payer => (
-                                                                    <SelectItem key={payer.id} value={payer.id}>{payer.name}</SelectItem>
+                                                                {payees?.map(payee => (
+                                                                    <SelectItem key={payee.id} value={payee.id}>{payee.name}</SelectItem>
                                                                 ))}
                                                             </SelectContent>
                                                         </Select>
@@ -665,7 +642,7 @@ export function TransactionForm({ open, transaction, defaultType = "expense", on
                                                             className="h-[52px] w-[52px] rounded-xl shrink-0"
                                                             onClick={() => {
                                                                 setNewEntityName("")
-                                                                setIsCreatingPayer(true)
+                                                                setIsCreatingPayee(true)
                                                             }}
                                                         >
                                                             <Plus className="h-4 w-4" />
@@ -682,7 +659,10 @@ export function TransactionForm({ open, transaction, defaultType = "expense", on
                                             render={({ field }) => (
                                                 <FormItem className="space-y-2">
                                                     <FormLabel className="text-sm font-semibold text-zinc-900 font-sans">Categoria</FormLabel>
-                                                    <Select onValueChange={field.onChange} value={field.value}>
+                                                    <Select onValueChange={(val) => {
+                                                        field.onChange(val)
+                                                        form.setValue("subcategory_id", "")
+                                                    }} value={field.value}>
                                                         <FormControl>
                                                             <SelectTrigger className="rounded-xl px-4 py-6 border-zinc-200 font-sans">
                                                                 <SelectValue placeholder="Selecione" />
@@ -825,50 +805,25 @@ export function TransactionForm({ open, transaction, defaultType = "expense", on
                 </AlertDialogContent>
             </AlertDialog>
 
-            {/* Create Payer Dialog */}
-            <Dialog open={isCreatingPayer} onOpenChange={setIsCreatingPayer}>
-                <DialogContent>
-                    <DialogHeader>
-                        <DialogTitle>Novo Pagador</DialogTitle>
-                        <DialogDescription>
-                            Adicione um novo pagador (fonte de receita).
-                        </DialogDescription>
-                    </DialogHeader>
-                    <div className="py-4">
-                        <Input
-                            placeholder="Nome do pagador"
-                            value={newEntityName}
-                            onChange={(e) => setNewEntityName(e.target.value)}
-                        />
-                    </div>
-                    <DialogFooter>
-                        <Button variant="outline" onClick={() => setIsCreatingPayer(false)}>Cancelar</Button>
-                        <Button onClick={handleCreatePayer} disabled={!newEntityName.trim() || isCreatingEntity}>
-                            {isCreatingEntity ? "Criando..." : "Criar"}
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
-
-            {/* Create Payee Dialog */}
+            {/* Create Contact Dialog */}
             <Dialog open={isCreatingPayee} onOpenChange={setIsCreatingPayee}>
                 <DialogContent>
                     <DialogHeader>
-                        <DialogTitle>Novo Favorecido</DialogTitle>
+                        <DialogTitle>Novo Contato</DialogTitle>
                         <DialogDescription>
-                            Adicione um novo favorecido (quem recebe o pagamento).
+                            Adicione um novo contato para usar como pagador ou favorecido.
                         </DialogDescription>
                     </DialogHeader>
                     <div className="py-4">
                         <Input
-                            placeholder="Nome do favorecido"
+                            placeholder="Nome do contato"
                             value={newEntityName}
                             onChange={(e) => setNewEntityName(e.target.value)}
                         />
                     </div>
                     <DialogFooter>
                         <Button variant="outline" onClick={() => setIsCreatingPayee(false)}>Cancelar</Button>
-                        <Button onClick={handleCreatePayee} disabled={!newEntityName.trim() || isCreatingEntity}>
+                        <Button onClick={handleCreateContact} disabled={!newEntityName.trim() || isCreatingEntity}>
                             {isCreatingEntity ? "Criando..." : "Criar"}
                         </Button>
                     </DialogFooter>

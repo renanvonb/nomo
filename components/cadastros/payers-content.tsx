@@ -8,6 +8,7 @@ import {
     Wallet, CreditCard, Smartphone
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { EmptyState } from '@/components/ui/empty-state';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -33,11 +34,11 @@ import {
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import {
-    Payer,
-    getPayers,
-    createPayer,
-    updatePayer,
-    deletePayer,
+    Payee,
+    getPayees,
+    createPayee,
+    updatePayee,
+    deletePayee,
 } from '@/lib/supabase/cadastros';
 
 // Paleta de cores Shadcn
@@ -78,27 +79,29 @@ const ICONS = [
     { name: 'phone', label: 'Telefone', Icon: Smartphone },
 ];
 
-export interface PayersContentRef {
-    openCreateDialog: () => void;
+export interface PayersContentProps {
+    isOpen: boolean;
+    onOpenChange: (open: boolean) => void;
 }
 
-export const PayersContent = forwardRef<PayersContentRef>((props, ref) => {
+export function PayersContent({ isOpen, onOpenChange }: PayersContentProps) {
     const router = useRouter();
-    const [payers, setPayers] = useState<Payer[]>([]);
+    const [payees, setPayees] = useState<Payee[]>([]);
     const [loading, setLoading] = useState(true);
-    const [isDialogOpen, setIsDialogOpen] = useState(false);
+
+    // isDialogOpen controlled by parent
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-    const [editingPayer, setEditingPayer] = useState<Payer | null>(null);
+    const [editingPayee, setEditingPayee] = useState<Payee | null>(null);
     const [deletingId, setDeletingId] = useState<string | null>(null);
     const [formData, setFormData] = useState({ name: '', color: 'zinc', icon: 'user' });
     const [formErrors, setFormErrors] = useState<Record<string, string>>({});
     const [submitting, setSubmitting] = useState(false);
 
-    const fetchPayers = async () => {
+    const fetchPayees = async () => {
         setLoading(true);
         try {
-            const data = await getPayers();
-            setPayers(data);
+            const data = await getPayees('payer');
+            setPayees(data);
         } catch (error: any) {
             console.error('Erro ao carregar pagadores:', error);
             if (error.message === 'Usuário não autenticado') {
@@ -113,26 +116,26 @@ export const PayersContent = forwardRef<PayersContentRef>((props, ref) => {
     };
 
     useEffect(() => {
-        fetchPayers();
+        fetchPayees();
     }, []);
 
     useEffect(() => {
-        if (!isDialogOpen) {
+        if (!isOpen) {
             setFormData({ name: '', color: 'zinc', icon: 'user' });
             setFormErrors({});
-            setEditingPayer(null);
+            setEditingPayee(null);
         }
-    }, [isDialogOpen]);
+    }, [isOpen]);
 
     useEffect(() => {
-        if (editingPayer) {
+        if (editingPayee) {
             setFormData({
-                name: editingPayer.name,
-                color: editingPayer.color || 'zinc',
-                icon: editingPayer.icon || 'user',
+                name: editingPayee.name,
+                color: editingPayee.color || 'zinc',
+                icon: editingPayee.icon || 'user',
             });
         }
-    }, [editingPayer]);
+    }, [editingPayee]);
 
     const validateForm = (): boolean => {
         const errors: Record<string, string> = {};
@@ -148,15 +151,15 @@ export const PayersContent = forwardRef<PayersContentRef>((props, ref) => {
 
         setSubmitting(true);
         try {
-            if (editingPayer) {
-                await updatePayer(editingPayer.id, formData);
+            if (editingPayee) {
+                await updatePayee(editingPayee.id, formData);
                 toast.success('Pagador atualizado com sucesso!');
             } else {
-                await createPayer(formData);
+                await createPayee({ ...formData, type: 'payer' });
                 toast.success('Pagador criado com sucesso!');
             }
-            setIsDialogOpen(false);
-            await fetchPayers();
+            onOpenChange(false);
+            await fetchPayees();
         } catch (error: any) {
             if (error.message === 'Usuário não autenticado') {
                 toast.error('Sessão expirada. Faça login novamente.');
@@ -174,11 +177,14 @@ export const PayersContent = forwardRef<PayersContentRef>((props, ref) => {
 
         setSubmitting(true);
         try {
-            await deletePayer(deletingId);
+            await deletePayee(deletingId);
+
+            // Atualizar estado local imediatamente
+            setPayees(prev => prev.filter(payee => payee.id !== deletingId));
+
             toast.success('Pagador excluído com sucesso!');
             setIsDeleteDialogOpen(false);
             setDeletingId(null);
-            await fetchPayers();
         } catch (error: any) {
             if (error.message === 'Usuário não autenticado') {
                 toast.error('Sessão expirada. Faça login novamente.');
@@ -191,9 +197,9 @@ export const PayersContent = forwardRef<PayersContentRef>((props, ref) => {
         }
     };
 
-    const openEditDialog = (payer: Payer) => {
-        setEditingPayer(payer);
-        setIsDialogOpen(true);
+    const openEditDialog = (payee: Payee) => {
+        setEditingPayee(payee);
+        onOpenChange(true);
     };
 
     const openDeleteDialog = (id: string) => {
@@ -210,15 +216,6 @@ export const PayersContent = forwardRef<PayersContentRef>((props, ref) => {
         const color = COLORS.find(c => c.name === colorName);
         return color ? color.bg : 'bg-zinc-500';
     };
-
-    // Expor método para abrir dialog de criação
-    useImperativeHandle(ref, () => ({
-        openCreateDialog: () => {
-            setEditingPayer(null);
-            setFormData({ name: '', color: 'zinc', icon: 'user' });
-            setIsDialogOpen(true);
-        },
-    }));
 
     // Preview do badge
     const PreviewBadge = () => {
@@ -244,29 +241,36 @@ export const PayersContent = forwardRef<PayersContentRef>((props, ref) => {
                 <div className="flex items-center justify-center py-12">
                     <Loader2 className="h-8 w-8 animate-spin text-[#00665C]" />
                 </div>
-            ) : payers.length === 0 ? (
-                <Card>
-                    <CardContent className="flex flex-col items-center justify-center py-12">
-                        <div className="rounded-full bg-blue-100 p-3 mb-4">
-                            <User className="h-6 w-6 text-blue-600" />
-                        </div>
-                        <p className="text-zinc-500 text-center">
-                            Nenhum pagador cadastrado.<br />
-                            Adicione seu primeiro pagador!
-                        </p>
-                    </CardContent>
-                </Card>
+            ) : payees.length === 0 ? (
+                <EmptyState
+                    variant="outlined"
+                    size="lg"
+                    icon={User}
+                    title="Nenhum pagador cadastrado"
+                    description="Adicione seu primeiro pagador para registrar suas receitas"
+                    action={
+                        <Button
+                            variant="outline"
+                            onClick={() => onOpenChange(true)}
+                            className="font-inter"
+                        >
+                            <Plus className="h-4 w-4 mr-2" />
+                            Adicionar
+                        </Button>
+                    }
+                    className="flex-1 bg-card"
+                />
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {payers.map((payer) => {
-                        const IconComponent = getIconComponent(payer.icon);
-                        const colorClass = getColorClass(payer.color);
+                    {payees.map((payee) => {
+                        const IconComponent = getIconComponent(payee.icon);
+                        const colorClass = getColorClass(payee.color);
 
                         return (
                             <Card
-                                key={payer.id}
+                                key={payee.id}
                                 className="hover:shadow-md transition-shadow cursor-pointer group"
-                                onClick={() => openEditDialog(payer)}
+                                onClick={() => openEditDialog(payee)}
                             >
                                 <CardContent className="p-6">
                                     <div className="flex items-start justify-between">
@@ -276,10 +280,10 @@ export const PayersContent = forwardRef<PayersContentRef>((props, ref) => {
                                             </div>
                                             <div className="flex-1 min-w-0">
                                                 <h3 className="font-semibold text-zinc-900 truncate">
-                                                    {payer.name}
+                                                    {payee.name}
                                                 </h3>
                                                 <p className="text-sm text-zinc-500 capitalize">
-                                                    {COLORS.find(c => c.name === payer.color)?.label || payer.color}
+                                                    {COLORS.find(c => c.name === payee.color)?.label || payee.color}
                                                 </p>
                                             </div>
                                         </div>
@@ -292,14 +296,14 @@ export const PayersContent = forwardRef<PayersContentRef>((props, ref) => {
             )}
 
             {/* Create/Edit Dialog */}
-            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+            <Dialog open={isOpen} onOpenChange={onOpenChange}>
                 <DialogContent className="sm:max-w-[500px]">
                     <DialogHeader>
                         <DialogTitle className="font-jakarta">
-                            {editingPayer ? 'Editar Pagador' : 'Novo Pagador'}
+                            {editingPayee ? 'Editar Pagador' : 'Novo Pagador'}
                         </DialogTitle>
                         <DialogDescription>
-                            {editingPayer
+                            {editingPayee
                                 ? 'Atualize as informações do pagador.'
                                 : 'Preencha os dados para criar um novo pagador.'}
                         </DialogDescription>
@@ -389,15 +393,15 @@ export const PayersContent = forwardRef<PayersContentRef>((props, ref) => {
                         </div>
                     </div>
 
-                    <DialogFooter className={editingPayer ? "sm:justify-between" : ""}>
-                        {editingPayer && (
+                    <DialogFooter className={editingPayee ? "sm:justify-between" : ""}>
+                        {editingPayee && (
                             <Button
                                 type="button"
                                 variant="ghost"
                                 onClick={() => {
-                                    if (editingPayer) {
-                                        openDeleteDialog(editingPayer.id);
-                                        setIsDialogOpen(false);
+                                    if (editingPayee) {
+                                        openDeleteDialog(editingPayee.id);
+                                        onOpenChange(false);
                                     }
                                 }}
                                 className="text-red-600 hover:text-red-700 hover:bg-red-50"
@@ -408,7 +412,7 @@ export const PayersContent = forwardRef<PayersContentRef>((props, ref) => {
                         <div className="flex gap-2">
                             <Button
                                 variant="outline"
-                                onClick={() => setIsDialogOpen(false)}
+                                onClick={() => onOpenChange(false)}
                                 disabled={submitting}
                             >
                                 Cancelar
@@ -464,6 +468,4 @@ export const PayersContent = forwardRef<PayersContentRef>((props, ref) => {
             </AlertDialog>
         </>
     );
-});
-
-PayersContent.displayName = 'PayersContent';
+}

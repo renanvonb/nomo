@@ -238,31 +238,58 @@ export default function TransactionsClient({ initialData }: TransactionsClientPr
                     </div>
 
                     {/* Container da Tabela (Área E) - Scroll Interno */}
-                    <div id="data-table-wrapper" className="flex-1 min-h-0 bg-white rounded-[16px] border border-zinc-200 shadow-sm flex flex-col relative overflow-hidden font-sans">
-                        {isPending && (
-                            <div className="absolute inset-0 bg-white/50 z-20 flex items-center justify-center backdrop-blur-[1px]">
-                                <Loader2 className="h-8 w-8 animate-spin text-zinc-950" />
-                            </div>
-                        )}
-
-                        {filteredData.length > 0 ? (
+                    {filteredData.length > 0 ? (
+                        <div id="data-table-wrapper" className="flex-1 min-h-0 bg-white rounded-[16px] border border-zinc-200 shadow-sm flex flex-col relative overflow-hidden font-sans">
+                            {isPending && (
+                                <div className="absolute inset-0 bg-white/50 z-20 flex items-center justify-center backdrop-blur-[1px]">
+                                    <Loader2 className="h-8 w-8 animate-spin text-zinc-950" />
+                                </div>
+                            )}
                             <TransactionTable data={filteredData} onRowClick={handleRowClick} />
-                        ) : (
-                            <div className="flex-1 flex flex-col items-center justify-center h-full min-h-[400px] p-8 animate-in fade-in duration-500">
-                                <EmptyState
-                                    variant="default"
-                                    title="Nenhuma transação encontrada"
-                                    description="Parece que você ainda não registrou nenhuma movimentação neste período."
-                                    icon={Inbox}
-                                />
-                                {searchQuery && (
-                                    <Button variant="link" onClick={() => setSearchValue("")} className="mt-4 text-zinc-500">
+                        </div>
+                    ) : (
+                        <EmptyState
+                            variant="outlined"
+                            size="lg"
+                            icon={Inbox}
+                            title={searchQuery ? "Nenhuma transação encontrada" : "Nenhuma transação cadastrada"}
+                            description={
+                                searchQuery
+                                    ? "Não encontramos transações com os termos buscados. Tente ajustar sua pesquisa."
+                                    : "Comece registrando sua primeira movimentação financeira para acompanhar suas finanças."
+                            }
+                            action={
+                                searchQuery ? (
+                                    <Button
+                                        variant="outline"
+                                        onClick={() => setSearchValue("")}
+                                        className="font-inter"
+                                    >
                                         Limpar busca
                                     </Button>
-                                )}
-                            </div>
-                        )}
-                    </div>
+                                ) : (
+                                    <DropdownMenu>
+                                        <DropdownMenuTrigger asChild>
+                                            <Button variant="outline" className="font-inter">
+                                                <Plus className="h-4 w-4 mr-2" />
+                                                Adicionar
+                                                <ChevronDown className="h-4 w-4 ml-2" />
+                                            </Button>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent align="center" className="w-[160px] bg-white">
+                                            <DropdownMenuItem onClick={() => handleNewTransaction('revenue')} className="cursor-pointer">
+                                                Receita
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem onClick={() => handleNewTransaction('expense')} className="cursor-pointer">
+                                                Despesa
+                                            </DropdownMenuItem>
+                                        </DropdownMenuContent>
+                                    </DropdownMenu>
+                                )
+                            }
+                            className="flex-1"
+                        />
+                    )}
 
                     {/* New Transaction Sheet */}
                     <Sheet open={isNewSheetOpen} onOpenChange={setIsNewSheetOpen}>
