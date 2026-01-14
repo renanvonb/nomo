@@ -38,7 +38,7 @@ export function PageHeader({ links, isLoading }: PageHeaderProps) {
     const moduleName = "Transações"
 
     return (
-        <header id="global-header" className="sticky top-0 z-30 w-full border-b border-zinc-200 bg-white/80 backdrop-blur-md h-16 flex-none font-sans">
+        <header id="global-header" className="sticky top-0 z-30 w-full border-b border-zinc-200 bg-white/80 backdrop-blur-md h-[72px] flex-none font-sans">
             <div className="max-w-[1440px] mx-auto px-8 h-full flex items-center justify-between w-full">
 
                 {/* Left: Sidebar Toggle + Static Breadcrumb */}
@@ -78,7 +78,7 @@ export function PageHeader({ links, isLoading }: PageHeaderProps) {
                                     key={link.href}
                                     href={link.href}
                                     className={cn(
-                                        'relative h-16 flex items-center px-1 text-sm font-medium transition-colors border-b-2 font-inter',
+                                        'relative h-[72px] flex items-center px-1 text-sm font-medium transition-colors border-b-2 font-inter',
                                         isActive
                                             ? 'text-zinc-950 border-zinc-950'
                                             : 'text-zinc-500 border-transparent hover:text-zinc-950'

@@ -175,7 +175,7 @@ export default function TransactionsClient({ initialData }: TransactionsClientPr
                         <div className="relative w-[200px]">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400" />
                             <Input
-                                placeholder="Buscar..."
+                                placeholder="Buscar"
                                 className="pl-9 h-10 font-inter w-full"
                                 value={searchValue}
                                 onChange={(e) => setSearchValue(e.target.value)}

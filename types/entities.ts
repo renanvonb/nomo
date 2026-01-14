@@ -10,8 +10,10 @@ export interface Wallet {
     logo?: string;
     balance?: number;
     is_active: boolean;
+    is_principal: boolean;
     created_at: string;
     updated_at: string;
+    transactions?: { count: number }[];
 }
 
 export interface Payer {
@@ -22,6 +24,7 @@ export interface Payer {
     color: string;
     created_at: string;
     updated_at: string;
+    transactions?: { count: number }[];
 }
 
 export interface Beneficiary {
@@ -33,6 +36,7 @@ export interface Beneficiary {
     color: string;
     created_at: string;
     updated_at: string;
+    transactions?: { count: number }[];
 }
 
 export interface Category {
@@ -48,6 +52,8 @@ export interface Category {
     // Propriedades computadas
     subcategories_count?: number;
     classifications?: Classification;
+    transactions?: { count: number }[];
+    subcategories?: { count: number }[];
 }
 
 export interface Subcategory {
@@ -58,6 +64,7 @@ export interface Subcategory {
     description?: string;
     created_at: string;
     updated_at: string;
+    transactions?: { count: number }[];
 }
 
 export interface Classification {
@@ -69,4 +76,7 @@ export interface Classification {
     icon: string;
     created_at: string;
     updated_at: string;
+    transactions_count?: number;
+    transactions?: { count: number }[];
+    categories?: { count: number }[];
 }

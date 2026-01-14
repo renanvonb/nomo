@@ -91,7 +91,7 @@ export default function CadastrosPage() {
 
                 {/* Page Header - Título, descrição, busca e botão no mesmo nível */}
                 <div className="flex items-center justify-between flex-none">
-                    <div>
+                    <div className="ml-2">
                         <h1 className="text-3xl font-bold tracking-tight text-zinc-950 font-jakarta">
                             {currentTab.title}
                         </h1>
@@ -102,10 +102,10 @@ export default function CadastrosPage() {
 
                     <div className="flex items-center gap-3">
                         {/* Search Bar */}
-                        <div className="relative w-[200px]">
+                        <div className="relative w-[250px]">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400" />
                             <Input
-                                placeholder="Buscar..."
+                                placeholder="Buscar"
                                 className="pl-9 h-10 font-inter w-full"
                                 value={searchValue}
                                 onChange={(e) => setSearchValue(e.target.value)}
@@ -125,11 +125,11 @@ export default function CadastrosPage() {
 
                 {/* Content Area - Cards */}
                 <div className="flex-1 flex flex-col gap-8 overflow-auto">
-                    {activeTab === 'carteiras' && <WalletsContent isOpen={isWalletDialogOpen} onOpenChange={setIsWalletDialogOpen} />}
-                    {activeTab === 'pagadores' && <PayersContent isOpen={isPayerDialogOpen} onOpenChange={setIsPayerDialogOpen} />}
-                    {activeTab === 'beneficiarios' && <PayeesContent isOpen={isPayeeDialogOpen} onOpenChange={setIsPayeeDialogOpen} />}
-                    {activeTab === 'categorias' && <CategoriesContent isOpen={isCategoryDialogOpen} onOpenChange={setIsCategoryDialogOpen} />}
-                    {activeTab === 'classificacoes' && <ClassificationsContent isOpen={isClassificationDialogOpen} onOpenChange={setIsClassificationDialogOpen} />}
+                    {activeTab === 'carteiras' && <WalletsContent isOpen={isWalletDialogOpen} onOpenChange={setIsWalletDialogOpen} searchQuery={searchValue} />}
+                    {activeTab === 'pagadores' && <PayersContent isOpen={isPayerDialogOpen} onOpenChange={setIsPayerDialogOpen} searchQuery={searchValue} />}
+                    {activeTab === 'beneficiarios' && <PayeesContent isOpen={isPayeeDialogOpen} onOpenChange={setIsPayeeDialogOpen} searchQuery={searchValue} />}
+                    {activeTab === 'categorias' && <CategoriesContent isOpen={isCategoryDialogOpen} onOpenChange={setIsCategoryDialogOpen} searchQuery={searchValue} />}
+                    {activeTab === 'classificacoes' && <ClassificationsContent isOpen={isClassificationDialogOpen} onOpenChange={setIsClassificationDialogOpen} searchQuery={searchValue} />}
                 </div>
             </div>
         </div>

@@ -3,7 +3,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 export function TopBarSkeleton() {
     return (
         <div className="sticky top-0 z-50 w-full border-b bg-white">
-            <div className="flex h-16 items-center justify-between px-6">
+            <div className="flex h-[72px] items-center justify-between px-6">
                 {/* Left: Breadcrumb */}
                 <div className="flex items-center gap-2">
                     <Skeleton className="h-4 w-16" />

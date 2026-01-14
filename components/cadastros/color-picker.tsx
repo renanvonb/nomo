@@ -1,52 +1,63 @@
 'use client';
 
+import { cn } from "@/lib/utils";
 
-
-const shadcnColors = [
-    '#0f172a', // slate-900
-    '#1e293b', // slate-800
-    '#334155', // slate-700
-    '#64748b', // slate-500
-    '#00665C', // verde Sollyd
-    '#ef4444', // red-500
-    '#f97316', // orange-500
-    '#f59e0b', // amber-500
-    '#eab308', // yellow-500
-    '#84cc16', // lime-500
-    '#22c55e', // green-500
-    '#10b981', // emerald-500
-    '#14b8a6', // teal-500
-    '#06b6d4', // cyan-500
-    '#0ea5e9', // sky-500
-    '#3b82f6', // blue-500
-    '#6366f1', // indigo-500
-    '#8b5cf6', // violet-500
-    '#a855f7', // purple-500
-    '#d946ef', // fuchsia-500
-    '#ec4899', // pink-500
-    '#f43f5e', // rose-500
+export const COLORS = [
+    { name: 'zinc', label: 'Cinza', bg: 'bg-zinc-500', hex: '#71717a' },
+    { name: 'red', label: 'Vermelho', bg: 'bg-red-500', hex: '#ef4444' },
+    { name: 'orange', label: 'Laranja', bg: 'bg-orange-500', hex: '#f97316' },
+    { name: 'amber', label: 'Âmbar', bg: 'bg-amber-500', hex: '#f59e0b' },
+    { name: 'yellow', label: 'Amarelo', bg: 'bg-yellow-500', hex: '#eab308' },
+    { name: 'lime', label: 'Lima', bg: 'bg-lime-500', hex: '#84cc16' },
+    { name: 'green', label: 'Verde', bg: 'bg-green-500', hex: '#22c55e' },
+    { name: 'emerald', label: 'Esmeralda', bg: 'bg-emerald-500', hex: '#10b981' },
+    { name: 'teal', label: 'Azul-petróleo', bg: 'bg-teal-500', hex: '#14b8a6' },
+    { name: 'cyan', label: 'Ciano', bg: 'bg-cyan-500', hex: '#06b6d4' },
+    { name: 'sky', label: 'Céu', bg: 'bg-sky-500', hex: '#0ea5e9' },
+    { name: 'blue', label: 'Azul', bg: 'bg-blue-500', hex: '#3b82f6' },
+    { name: 'indigo', label: 'Índigo', bg: 'bg-indigo-500', hex: '#6366f1' },
+    { name: 'violet', label: 'Violeta', bg: 'bg-violet-500', hex: '#8b5cf6' },
+    { name: 'purple', label: 'Roxo', bg: 'bg-purple-500', hex: '#a855f7' },
+    { name: 'fuchsia', label: 'Fúcsia', bg: 'bg-fuchsia-500', hex: '#d946ef' },
+    { name: 'pink', label: 'Rosa', bg: 'bg-pink-500', hex: '#ec4899' },
+    { name: 'rose', label: 'Rosa-escuro', bg: 'bg-rose-500', hex: '#f43f5e' },
 ];
 
 interface ColorPickerProps {
     value: string;
     onChange: (color: string) => void;
-    colors?: string[];
 }
 
-export function ColorPicker({ value, onChange, colors = shadcnColors }: ColorPickerProps) {
+export function ColorPicker({ value, onChange }: ColorPickerProps) {
     return (
-        <div className="grid grid-cols-8 gap-2">
-            {colors.map((color) => (
-                <button
-                    key={color}
-                    type="button"
-                    onClick={() => onChange(color)}
-                    className={`w-8 h-8 rounded-lg transition-all border-2 ${value === color ? 'border-zinc-950 ring-2 ring-zinc-950 ring-offset-2' : 'border-transparent hover:scale-110'
-                        }`}
-                    style={{ backgroundColor: color }}
-                    title={color}
-                />
-            ))}
+        <div className="grid grid-cols-9 gap-2">
+            {COLORS.map((color) => {
+                const isSelected = value === color.name;
+
+                return (
+                    <button
+                        key={color.name}
+                        type="button"
+                        onClick={() => onChange(color.name)}
+                        className={cn(
+                            'h-10 w-10 rounded-lg transition-all',
+                            color.bg,
+                            isSelected && 'ring-2 ring-zinc-950 ring-offset-2'
+                        )}
+                        title={color.label}
+                    />
+                );
+            })}
         </div>
     );
+}
+
+export function getColorClass(colorName: string) {
+    const color = COLORS.find(c => c.name === colorName);
+    return color ? color.bg : 'bg-zinc-500';
+}
+
+export function getColorHex(colorName: string) {
+    const color = COLORS.find(c => c.name === colorName);
+    return color ? color.hex : '#71717a';
 }

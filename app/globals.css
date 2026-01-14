@@ -124,4 +124,36 @@
   .scrollbar-gutter-stable {
     scrollbar-gutter: stable;
   }
+
+  /* Logo Sweep Animation */
+  @keyframes logo-sweep {
+    0% {
+      background-position: 0% 150%;
+      opacity: 0;
+    }
+
+    5% {
+      opacity: 1;
+    }
+
+    14% {
+      background-position: 0% -50%;
+      opacity: 1;
+    }
+
+    16% {
+      opacity: 0;
+    }
+
+    100% {
+      background-position: 0% -50%;
+      opacity: 0;
+    }
+  }
+
+  .animate-logo-sweep {
+    animation: logo-sweep 5.8s linear infinite;
+    background-size: 100% 200%;
+    background-repeat: no-repeat;
+  }
 }

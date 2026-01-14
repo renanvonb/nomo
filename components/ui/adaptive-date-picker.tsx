@@ -132,7 +132,7 @@ export function AdaptiveDatePicker({ mode, value, onChange, className }: Adaptiv
                 <Button
                     variant="outline"
                     className={cn(
-                        "w-[150px] justify-start text-left font-inter font-normal px-3",
+                        "w-auto justify-start text-left font-inter font-normal px-3",
                         !date && "text-muted-foreground",
                         className
                     )}

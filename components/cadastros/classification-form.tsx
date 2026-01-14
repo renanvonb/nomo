@@ -7,7 +7,6 @@ import { Button } from "@/components/ui/button"
 import {
     Form,
     FormControl,
-    FormDescription,
     FormField,
     FormItem,
     FormLabel,
@@ -15,53 +14,50 @@ import {
 } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Loader2 } from "lucide-react"
 import { ColorPicker, getColorClass } from "./color-picker"
-import { IconPicker, getIconByName } from "./icon-picker"
-import { Classification } from "@/types/entities"
+import { getIconByName } from "./icon-picker"
 import { useEffect, useState } from "react"
-import { createCategory, updateCategory } from "@/lib/supabase/cadastros"
+import { createClient } from "@/lib/supabase/client"
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
 
 const formSchema = z.object({
     name: z.string().min(1, "Nome é obrigatório").max(50, "Máximo 50 caracteres"),
-    description: z.string().max(200, "Máximo 200 caracteres").optional(),
-    classification_id: z.string().optional(),
+    description: z.string().max(150, "Máximo 150 caracteres").optional().or(z.literal('')),
     icon: z.string().min(1, "Ícone é obrigatório"),
     color: z.string().min(1, "Cor é obrigatória"),
+    updated_at: z.string().optional(),
 })
 
-export type CategoryFormValues = z.infer<typeof formSchema>;
+export type ClassificationFormValues = z.infer<typeof formSchema>;
 
-interface CategoryFormProps {
-    defaultValues?: Partial<CategoryFormValues>;
-    categoryId?: string;
-    classifications: Classification[];
+interface ClassificationFormProps {
+    defaultValues?: Partial<ClassificationFormValues>;
+    classificationId?: string;
     onSuccess: () => void;
     onCancel: () => void;
     onDelete?: () => void;
 }
 
-export function CategoryForm({
+export function ClassificationForm({
     defaultValues,
-    categoryId,
-    classifications,
+    classificationId,
     onSuccess,
     onCancel,
     onDelete,
-}: CategoryFormProps) {
+}: ClassificationFormProps) {
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const form = useForm<CategoryFormValues>({
+    const supabase = createClient();
+
+    const form = useForm<ClassificationFormValues>({
         resolver: zodResolver(formSchema),
         defaultValues: {
             name: '',
             description: '',
-            classification_id: '',
-            icon: 'cart',
-            color: 'zinc',
-            ...defaultValues
+            ...defaultValues,
+            icon: 'flag',
+            color: defaultValues?.color || 'zinc',
         },
     })
 
@@ -70,43 +66,53 @@ export function CategoryForm({
     const watchColor = watch('color');
     const watchIcon = watch('icon');
 
-    // Reset form when defaultValues change (e.g. switching between edit/create)
     useEffect(() => {
         if (defaultValues) {
             form.reset({
                 name: '',
                 description: '',
-                classification_id: '',
-                icon: 'cart',
-                color: 'zinc',
-                ...defaultValues
+                ...defaultValues,
+                icon: 'flag',
             });
         }
     }, [defaultValues, form]);
 
-    const handleSubmit = async (values: CategoryFormValues) => {
+    const handleSubmit = async (values: ClassificationFormValues) => {
         try {
             setIsSubmitting(true);
+            const { data: { user } } = await supabase.auth.getUser();
 
-            // Sanitize payload: convert empty strings to undefined to avoid UUID errors or empty text
+            if (!user) {
+                toast.error('Sessão expirada. Faça login novamente.');
+                return;
+            }
+
+            const { updated_at, ...valuesWithoutUpdatedAt } = values;
+
             const payload = {
-                ...values,
-                description: values.description || undefined,
-                classification_id: values.classification_id || undefined,
+                ...valuesWithoutUpdatedAt,
+                user_id: user.id,
             };
 
-            // Helper functions handle user_id injection via auth.getUser() implicitly/explicitly
-            if (categoryId) {
-                await updateCategory(categoryId, payload);
-                toast.success('Categoria atualizada com sucesso!');
+            if (classificationId) {
+                const { error } = await supabase
+                    .from('classifications')
+                    .update(payload)
+                    .eq('id', classificationId)
+                    .eq('user_id', user.id);
+                if (error) throw error;
+                toast.success('Classificação atualizada com sucesso!');
             } else {
-                await createCategory(payload);
-                toast.success('Categoria criada com sucesso!');
+                const { error } = await supabase
+                    .from('classifications')
+                    .insert([payload]);
+                if (error) throw error;
+                toast.success('Classificação criada com sucesso!');
             }
             onSuccess();
         } catch (error: any) {
-            console.error('Error saving category:', error);
-            toast.error(error.message || 'Erro ao salvar categoria');
+            console.error('Error saving classification:', error);
+            toast.error(error.message || 'Erro ao salvar classificação');
         } finally {
             setIsSubmitting(false);
         }
@@ -122,7 +128,7 @@ export function CategoryForm({
                     <IconComp className="h-4 w-4 text-white" />
                 </div>
                 <span className="text-sm font-medium text-zinc-900">
-                    {watchName || 'Nome da categoria'}
+                    {watchName || 'Nome da classificação'}
                 </span>
             </div>
         );
@@ -142,7 +148,7 @@ export function CategoryForm({
                                 Nome <span className="text-red-600">*</span>
                             </FormLabel>
                             <FormControl>
-                                <Input {...field} placeholder="Ex: Alimentação, Lazer" className="font-inter" />
+                                <Input {...field} placeholder="Informe o nome da classificação" className="font-inter" />
                             </FormControl>
                             <FormMessage />
                         </FormItem>
@@ -154,51 +160,16 @@ export function CategoryForm({
                     name="description"
                     render={({ field }) => (
                         <FormItem>
-                            <FormLabel>Descrição</FormLabel>
+                            <FormLabel className={form.formState.errors.description ? "text-red-600" : ""}>
+                                Descrição
+                            </FormLabel>
                             <FormControl>
-                                <Textarea {...field} placeholder="Descrição opcional" className="font-inter" />
-                            </FormControl>
-                            <FormMessage />
-                        </FormItem>
-                    )}
-                />
-
-                <FormField
-                    control={form.control}
-                    name="classification_id"
-                    render={({ field }) => (
-                        <FormItem>
-                            <FormLabel>Classificação</FormLabel>
-                            <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value}>
-                                <FormControl>
-                                    <SelectTrigger className="font-inter text-zinc-600">
-                                        <SelectValue placeholder="Selecione uma classificação" />
-                                    </SelectTrigger>
-                                </FormControl>
-                                <SelectContent>
-                                    {classifications.map((item) => (
-                                        <SelectItem key={item.id} value={item.id}>
-                                            {item.name}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                            <FormDescription>
-                                Opcional, usado para agrupamento.
-                            </FormDescription>
-                            <FormMessage />
-                        </FormItem>
-                    )}
-                />
-
-                <FormField
-                    control={form.control}
-                    name="icon"
-                    render={({ field }) => (
-                        <FormItem>
-                            <FormLabel>Ícone</FormLabel>
-                            <FormControl>
-                                <IconPicker value={field.value} onChange={field.onChange} />
+                                <Textarea
+                                    {...field}
+                                    placeholder="Informe uma breve descrição"
+                                    className="font-inter resize-none"
+                                    maxLength={150}
+                                />
                             </FormControl>
                             <FormMessage />
                         </FormItem>

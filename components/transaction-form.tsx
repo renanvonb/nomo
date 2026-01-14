@@ -6,6 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
 import { format, parseISO } from "date-fns"
 import { Loader2 } from "lucide-react"
+import { cn } from "@/lib/utils"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -58,6 +59,7 @@ import { DatePicker } from "@/components/ui/date-picker"
 import { Badge } from "@/components/ui/badge"
 import { saveTransaction, updateTransaction, deleteTransaction } from "@/app/actions/transactions"
 import { getPaymentMethods, getCategories, getSubcategories, getWallets } from "@/app/actions/transaction-data"
+import { getColorClass } from "@/components/cadastros/color-picker"
 import { usePayees } from "@/hooks/usePayees"
 import { PaymentMethod, Payee, Category, Subcategory, Wallet } from "@/types/transaction"
 import type { Transaction } from "@/types/transaction"
@@ -242,11 +244,29 @@ export function TransactionForm({ open, transaction, defaultType = "expense", on
                 ])
                 setPaymentMethods(methods)
                 setAllCategories(cats)
-                setWallets(wals)
+
+                const sortedWallets = [...wals].sort((a, b) => {
+                    const aP = a.is_principal ? 1 : 0;
+                    const bP = b.is_principal ? 1 : 0;
+                    if (aP !== bP) return bP - aP;
+                    return a.name.localeCompare(b.name);
+                });
+
+                setWallets(sortedWallets)
+
+                // Set principal wallet as default
+                const principalWallet = wals.find((w: Wallet) => w.is_principal)
+
+                if (principalWallet && !form.getValues("wallet_id")) {
+                    form.setValue("wallet_id", principalWallet.id, {
+                        shouldValidate: true,
+                        shouldDirty: true,
+                    })
+                }
             }
             loadData()
         }
-    }, [open, defaultType, transaction, reset])
+    }, [open, defaultType, transaction, reset, form])
 
     // Load subcategories when category changes
     React.useEffect(() => {
@@ -290,7 +310,6 @@ export function TransactionForm({ open, transaction, defaultType = "expense", on
 
                 const payload = {
                     ...data,
-                    wallet_id: null,
                     due_date: format(effectiveDueDate, 'yyyy-MM-dd'),
                     payment_date: data.payment_date ? format(data.payment_date, 'yyyy-MM-dd') : null,
                     competence_date: data.competence_date ? format(data.competence_date, 'yyyy-MM-dd') : null,
@@ -417,9 +436,17 @@ export function TransactionForm({ open, transaction, defaultType = "expense", on
                                                     </SelectTrigger>
                                                 </FormControl>
                                                 <SelectContent className="bg-white border-zinc-200">
-                                                    {wallets.map(wallet => (
-                                                        <SelectItem key={wallet.id} value={wallet.id}>{wallet.name}</SelectItem>
-                                                    ))}
+                                                    {wallets.map(wallet => {
+                                                        const colorClass = getColorClass(wallet.color || 'zinc');
+                                                        return (
+                                                            <SelectItem key={wallet.id} value={wallet.id}>
+                                                                <div className="flex items-center gap-2">
+                                                                    <div className={cn("h-3 w-3 rounded-full", colorClass)} />
+                                                                    {wallet.name}
+                                                                </div>
+                                                            </SelectItem>
+                                                        )
+                                                    })}
                                                 </SelectContent>
                                             </Select>
                                             <FormMessage />

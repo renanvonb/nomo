@@ -39,6 +39,7 @@ export interface Wallet {
     logo_url?: string;
     color?: string;
     icon?: string;
+    is_principal: boolean;
     created_at: string;
 }
 

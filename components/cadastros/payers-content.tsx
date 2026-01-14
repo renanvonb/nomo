@@ -1,18 +1,17 @@
 'use client';
 
-import { useState, useEffect, forwardRef, useImperativeHandle } from 'react';
-import {
-    Plus, Pencil, Trash2, Loader2,
-    User, Building2, Store, Home, Car,
-    ShoppingCart, Utensils, Heart, Briefcase,
-    Wallet, CreditCard, Smartphone
-} from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Plus, Loader2, User, UserRound, SearchX } from 'lucide-react';
+import { HighlightText } from '@/components/ui/highlight-text';
+import { IconPicker, getIconByName } from './icon-picker';
+import { ColorPicker, getColorClass } from './color-picker';
 import { useRouter } from 'next/navigation';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import {
     Dialog,
     DialogContent,
@@ -21,6 +20,7 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
     AlertDialog,
     AlertDialogAction,
@@ -40,8 +40,9 @@ import {
     updatePayee,
     deletePayee,
 } from '@/lib/supabase/cadastros';
+import { ModuleCardsSkeleton } from '@/components/ui/skeletons';
 
-// Paleta de cores Shadcn
+// Paleta de cores Shadcn (Anterior)
 const COLORS = [
     { name: 'zinc', label: 'Cinza', bg: 'bg-zinc-500' },
     { name: 'red', label: 'Vermelho', bg: 'bg-red-500' },
@@ -63,45 +64,35 @@ const COLORS = [
     { name: 'rose', label: 'Rosa-escuro', bg: 'bg-rose-500' },
 ];
 
-// Ícones disponíveis
-const ICONS = [
-    { name: 'user', label: 'Pessoa', Icon: User },
-    { name: 'building', label: 'Empresa', Icon: Building2 },
-    { name: 'store', label: 'Loja', Icon: Store },
-    { name: 'home', label: 'Casa', Icon: Home },
-    { name: 'car', label: 'Carro', Icon: Car },
-    { name: 'cart', label: 'Carrinho', Icon: ShoppingCart },
-    { name: 'food', label: 'Comida', Icon: Utensils },
-    { name: 'heart', label: 'Coração', Icon: Heart },
-    { name: 'briefcase', label: 'Maleta', Icon: Briefcase },
-    { name: 'wallet', label: 'Carteira', Icon: Wallet },
-    { name: 'card', label: 'Cartão', Icon: CreditCard },
-    { name: 'phone', label: 'Telefone', Icon: Smartphone },
-];
+
 
 export interface PayersContentProps {
     isOpen: boolean;
     onOpenChange: (open: boolean) => void;
+    searchQuery: string;
 }
 
-export function PayersContent({ isOpen, onOpenChange }: PayersContentProps) {
+export function PayersContent({ isOpen, onOpenChange, searchQuery }: PayersContentProps) {
     const router = useRouter();
-    const [payees, setPayees] = useState<Payee[]>([]);
+    const [payers, setPayers] = useState<Payee[]>([]);
     const [loading, setLoading] = useState(true);
-
-    // isDialogOpen controlled by parent
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-    const [editingPayee, setEditingPayee] = useState<Payee | null>(null);
+    const [editingPayer, setEditingPayer] = useState<Payee | null>(null);
     const [deletingId, setDeletingId] = useState<string | null>(null);
-    const [formData, setFormData] = useState({ name: '', color: 'zinc', icon: 'user' });
+    const [formData, setFormData] = useState({ name: '', color: 'zinc', icon: 'user-round' });
     const [formErrors, setFormErrors] = useState<Record<string, string>>({});
     const [submitting, setSubmitting] = useState(false);
 
-    const fetchPayees = async () => {
+    const filteredPayers = payers.filter(payer => {
+        const normalize = (s: string) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, "").toLowerCase();
+        return normalize(payer.name).includes(normalize(searchQuery));
+    });
+
+    const fetchPayers = async () => {
         setLoading(true);
         try {
             const data = await getPayees('payer');
-            setPayees(data);
+            setPayers(data);
         } catch (error: any) {
             console.error('Erro ao carregar pagadores:', error);
             if (error.message === 'Usuário não autenticado') {
@@ -116,26 +107,26 @@ export function PayersContent({ isOpen, onOpenChange }: PayersContentProps) {
     };
 
     useEffect(() => {
-        fetchPayees();
+        fetchPayers();
     }, []);
 
     useEffect(() => {
         if (!isOpen) {
-            setFormData({ name: '', color: 'zinc', icon: 'user' });
+            setFormData({ name: '', color: 'zinc', icon: 'user-round' });
             setFormErrors({});
-            setEditingPayee(null);
+            setEditingPayer(null);
         }
     }, [isOpen]);
 
     useEffect(() => {
-        if (editingPayee) {
+        if (editingPayer) {
             setFormData({
-                name: editingPayee.name,
-                color: editingPayee.color || 'zinc',
-                icon: editingPayee.icon || 'user',
+                name: editingPayer.name,
+                color: editingPayer.color || 'zinc',
+                icon: editingPayer.icon || 'user-round',
             });
         }
-    }, [editingPayee]);
+    }, [editingPayer]);
 
     const validateForm = (): boolean => {
         const errors: Record<string, string> = {};
@@ -151,15 +142,15 @@ export function PayersContent({ isOpen, onOpenChange }: PayersContentProps) {
 
         setSubmitting(true);
         try {
-            if (editingPayee) {
-                await updatePayee(editingPayee.id, formData);
+            if (editingPayer) {
+                await updatePayee(editingPayer.id, { ...formData, type: 'payer' });
                 toast.success('Pagador atualizado com sucesso!');
             } else {
                 await createPayee({ ...formData, type: 'payer' });
                 toast.success('Pagador criado com sucesso!');
             }
             onOpenChange(false);
-            await fetchPayees();
+            await fetchPayers();
         } catch (error: any) {
             if (error.message === 'Usuário não autenticado') {
                 toast.error('Sessão expirada. Faça login novamente.');
@@ -178,10 +169,7 @@ export function PayersContent({ isOpen, onOpenChange }: PayersContentProps) {
         setSubmitting(true);
         try {
             await deletePayee(deletingId);
-
-            // Atualizar estado local imediatamente
-            setPayees(prev => prev.filter(payee => payee.id !== deletingId));
-
+            setPayers(prev => prev.filter(payer => payer.id !== deletingId));
             toast.success('Pagador excluído com sucesso!');
             setIsDeleteDialogOpen(false);
             setDeletingId(null);
@@ -197,29 +185,15 @@ export function PayersContent({ isOpen, onOpenChange }: PayersContentProps) {
         }
     };
 
-    const openEditDialog = (payee: Payee) => {
-        setEditingPayee(payee);
-        onOpenChange(true);
-    };
 
-    const openDeleteDialog = (id: string) => {
-        setDeletingId(id);
-        setIsDeleteDialogOpen(true);
-    };
 
-    const getIconComponent = (iconName: string) => {
-        const icon = ICONS.find(i => i.name === iconName);
-        return icon ? icon.Icon : User;
-    };
-
-    const getColorClass = (colorName: string) => {
-        const color = COLORS.find(c => c.name === colorName);
-        return color ? color.bg : 'bg-zinc-500';
-    };
-
-    // Preview do badge
     const PreviewBadge = () => {
-        const IconComp = getIconComponent(formData.icon);
+        let iconName = formData.icon || 'user-round';
+        if (iconName === 'user') iconName = 'user-round';
+        // Ensure building-2 uses the correct component if my icon-picker handles it by name
+        // (Since I added 'building-2' to ICONS, getIconByName will find it).
+
+        const IconComp = getIconByName(iconName, UserRound);
         const colorClass = getColorClass(formData.color);
 
         return (
@@ -236,18 +210,15 @@ export function PayersContent({ isOpen, onOpenChange }: PayersContentProps) {
 
     return (
         <>
-            {/* Content */}
             {loading ? (
-                <div className="flex items-center justify-center py-12">
-                    <Loader2 className="h-8 w-8 animate-spin text-[#00665C]" />
-                </div>
-            ) : payees.length === 0 ? (
+                <ModuleCardsSkeleton />
+            ) : payers.length === 0 ? (
                 <EmptyState
                     variant="outlined"
                     size="lg"
                     icon={User}
                     title="Nenhum pagador cadastrado"
-                    description="Adicione seu primeiro pagador para registrar suas receitas"
+                    description="Adicione seu primeiro pagador para registrar suas entradas"
                     action={
                         <Button
                             variant="outline"
@@ -258,34 +229,50 @@ export function PayersContent({ isOpen, onOpenChange }: PayersContentProps) {
                             Adicionar
                         </Button>
                     }
-                    className="flex-1 bg-card"
+                    className="flex-1 bg-white border-zinc-200 border-dashed"
+                />
+            ) : filteredPayers.length === 0 ? (
+                <EmptyState
+                    variant="outlined"
+                    size="lg"
+                    icon={SearchX}
+                    title="Nenhum pagador encontrado"
+                    description="Tente novamente para encontrar o que está buscando"
+                    className="flex-1 bg-white border-zinc-200 border-dashed"
                 />
             ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {payees.map((payee) => {
-                        const IconComponent = getIconComponent(payee.icon);
-                        const colorClass = getColorClass(payee.color);
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 p-1">
+                    {filteredPayers.map((payer) => {
+                        const iconName = (!payer.icon || payer.icon === 'user') ? 'user-round' : payer.icon;
+                        const IconComponent = getIconByName(iconName, UserRound);
+                        const colorClass = getColorClass(payer.color);
 
                         return (
                             <Card
-                                key={payee.id}
-                                className="hover:shadow-md transition-shadow cursor-pointer group"
-                                onClick={() => openEditDialog(payee)}
+                                key={payer.id}
+                                className="hover:bg-zinc-50 hover:shadow-md hover:-translate-y-1 transition-all duration-300 cursor-pointer group border-zinc-200 relative overflow-hidden"
+                                onClick={() => {
+                                    setEditingPayer(payer);
+                                    onOpenChange(true);
+                                }}
                             >
+                                <div className="absolute top-4 right-4">
+                                    <Badge variant="secondary" className="font-inter text-[10px] uppercase tracking-wider px-2 py-0 border bg-zinc-100/80 backdrop-blur-sm shadow-sm">
+                                        {(payer.icon === 'building-2' || payer.icon === 'building') ? 'Jurídica' : 'Física'}
+                                    </Badge>
+                                </div>
                                 <CardContent className="p-6">
-                                    <div className="flex items-start justify-between">
-                                        <div className="flex items-center gap-3 flex-1">
-                                            <div className={cn('rounded-full p-2.5', colorClass)}>
-                                                <IconComponent className="h-5 w-5 text-white" />
-                                            </div>
-                                            <div className="flex-1 min-w-0">
-                                                <h3 className="font-semibold text-zinc-900 truncate">
-                                                    {payee.name}
-                                                </h3>
-                                                <p className="text-sm text-zinc-500 capitalize">
-                                                    {COLORS.find(c => c.name === payee.color)?.label || payee.color}
-                                                </p>
-                                            </div>
+                                    <div className="flex items-center gap-4">
+                                        <div className={cn('rounded-full p-2.5 flex-shrink-0', colorClass)}>
+                                            <IconComponent className="h-5 w-5 text-white" />
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <h3 className="font-semibold text-zinc-900 truncate">
+                                                <HighlightText text={payer.name} highlight={searchQuery} />
+                                            </h3>
+                                            <p className="text-sm text-zinc-500 font-inter">
+                                                {payer.transactions?.[0]?.count || 0} transações
+                                            </p>
                                         </div>
                                     </div>
                                 </CardContent>
@@ -295,25 +282,38 @@ export function PayersContent({ isOpen, onOpenChange }: PayersContentProps) {
                 </div>
             )}
 
-            {/* Create/Edit Dialog */}
             <Dialog open={isOpen} onOpenChange={onOpenChange}>
                 <DialogContent className="sm:max-w-[500px]">
                     <DialogHeader>
                         <DialogTitle className="font-jakarta">
-                            {editingPayee ? 'Editar Pagador' : 'Novo Pagador'}
+                            {editingPayer ? 'Editar pagador' : 'Novo pagador'}
                         </DialogTitle>
                         <DialogDescription>
-                            {editingPayee
+                            {editingPayer
                                 ? 'Atualize as informações do pagador.'
-                                : 'Preencha os dados para criar um novo pagador.'}
+                                : 'Preencha as informações do pagador.'}
                         </DialogDescription>
                     </DialogHeader>
 
                     <div className="space-y-4 pb-4">
-                        {/* Preview do Badge */}
                         <PreviewBadge />
 
-                        {/* Nome */}
+                        <Tabs
+                            defaultValue={formData.icon === 'building-2' || formData.icon === 'building' ? 'corporate' : 'individual'}
+                            className="w-full"
+                            onValueChange={(value) => {
+                                setFormData({
+                                    ...formData,
+                                    icon: value === 'corporate' ? 'building-2' : 'user-round'
+                                });
+                            }}
+                        >
+                            <TabsList className="grid w-full grid-cols-2">
+                                <TabsTrigger value="individual">Pessoa física</TabsTrigger>
+                                <TabsTrigger value="corporate">Pessoa jurídica</TabsTrigger>
+                            </TabsList>
+                        </Tabs>
+
                         <div className="space-y-2">
                             <Label
                                 htmlFor="name"
@@ -326,7 +326,7 @@ export function PayersContent({ isOpen, onOpenChange }: PayersContentProps) {
                             </Label>
                             <Input
                                 id="name"
-                                placeholder="Ex: Goapice, Recebee"
+                                placeholder="Ex: João Silva, Empresa XYZ"
                                 value={formData.name}
                                 onChange={(e) =>
                                     setFormData({ ...formData, name: e.target.value })
@@ -340,35 +340,8 @@ export function PayersContent({ isOpen, onOpenChange }: PayersContentProps) {
                             )}
                         </div>
 
-                        {/* Ícone */}
-                        <div className="space-y-2">
-                            <Label>Ícone</Label>
-                            <div className="grid grid-cols-6 gap-2">
-                                {ICONS.map((icon) => {
-                                    const IconComp = icon.Icon;
-                                    const isSelected = formData.icon === icon.name;
 
-                                    return (
-                                        <button
-                                            key={icon.name}
-                                            type="button"
-                                            onClick={() => setFormData({ ...formData, icon: icon.name })}
-                                            className={cn(
-                                                'p-3 rounded-lg border-2 transition-all hover:border-zinc-400',
-                                                isSelected
-                                                    ? 'border-zinc-950 bg-zinc-100'
-                                                    : 'border-zinc-200'
-                                            )}
-                                            title={icon.label}
-                                        >
-                                            <IconComp className="h-5 w-5 mx-auto" />
-                                        </button>
-                                    );
-                                })}
-                            </div>
-                        </div>
 
-                        {/* Cor */}
                         <div className="space-y-2">
                             <Label>Cor</Label>
                             <div className="grid grid-cols-9 gap-2">
@@ -393,16 +366,15 @@ export function PayersContent({ isOpen, onOpenChange }: PayersContentProps) {
                         </div>
                     </div>
 
-                    <DialogFooter className={editingPayee ? "sm:justify-between" : ""}>
-                        {editingPayee && (
+                    <DialogFooter className={editingPayer ? "sm:justify-between" : ""}>
+                        {editingPayer && (
                             <Button
                                 type="button"
                                 variant="ghost"
                                 onClick={() => {
-                                    if (editingPayee) {
-                                        openDeleteDialog(editingPayee.id);
-                                        onOpenChange(false);
-                                    }
+                                    setDeletingId(editingPayer.id);
+                                    onOpenChange(false);
+                                    setIsDeleteDialogOpen(true);
                                 }}
                                 className="text-red-600 hover:text-red-700 hover:bg-red-50"
                             >
@@ -436,7 +408,6 @@ export function PayersContent({ isOpen, onOpenChange }: PayersContentProps) {
                 </DialogContent>
             </Dialog>
 
-            {/* Delete Confirmation Dialog */}
             <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
                 <AlertDialogContent>
                     <AlertDialogHeader>
@@ -454,14 +425,7 @@ export function PayersContent({ isOpen, onOpenChange }: PayersContentProps) {
                             disabled={submitting}
                             className="bg-red-600 hover:bg-red-700"
                         >
-                            {submitting ? (
-                                <>
-                                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                                    Excluindo...
-                                </>
-                            ) : (
-                                'Excluir'
-                            )}
+                            {submitting ? 'Excluindo...' : 'Excluir'}
                         </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>

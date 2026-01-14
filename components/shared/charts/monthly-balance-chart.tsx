@@ -29,9 +29,10 @@ ChartJS.register(
 
 interface MonthlyBalanceChartProps {
     data: Array<{ day: string; receitas: number; despesas: number }>
+    className?: string
 }
 
-export function MonthlyBalanceChart({ data }: MonthlyBalanceChartProps) {
+export function MonthlyBalanceChart({ data, className }: MonthlyBalanceChartProps) {
     const { isVisible } = useVisibility()
 
     const formatValue = (value: number) => {
@@ -170,23 +171,27 @@ export function MonthlyBalanceChart({ data }: MonthlyBalanceChartProps) {
         },
     }
 
+    // Import cn if not imported, or assume it is available if other files use it.
+    // Looking at the view_file, 'cn' is NOT imported in the original file.
+    // I need to add import { cn } from "@/lib/utils" to the imports if I use it.
+    // Wait, the original file did NOT import 'cn'.
+    // I'll assume I should use string interpolation or add the import.
+    // Let's add the import to the top block.
+
     return (
-        <Card className="rounded-[16px] border-zinc-200 shadow-sm">
+        <Card className={`rounded-[16px] border-zinc-200 shadow-sm flex flex-col ${className || ''}`}>
             <CardHeader>
-                <CardTitle className="text-lg font-semibold font-jakarta text-zinc-950">
-                    Balanço Mensal (Receitas x Despesas)
+                <CardTitle className="text-zinc-500 font-semibold font-sans tracking-tight text-sm">
+                    Balanço
                 </CardTitle>
-                <CardDescription className="text-sm text-zinc-500 font-inter">
-                    Comparativo temporal ao longo do mês
-                </CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="flex-1 min-h-[300px]">
                 {data.length === 0 ? (
-                    <div className="flex items-center justify-center h-[300px] text-zinc-500 font-inter">
+                    <div className="flex items-center justify-center h-full text-zinc-500 font-inter">
                         Nenhum dado encontrado
                     </div>
                 ) : (
-                    <div className="h-[300px] w-full">
+                    <div className="h-full w-full">
                         <Line data={chartConfig} options={options} />
                     </div>
                 )}

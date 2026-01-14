@@ -49,6 +49,7 @@ const menuItems = [
         href: '/investimentos',
         icon: TrendingUp,
         disabled: true,
+        tooltip: 'Investimentos (Em breve)',
     },
     {
         label: 'Cadastros',
@@ -70,7 +71,7 @@ export function AppSidebar({ user }: SidebarProps) {
 
 
     return (
-        <TooltipProvider delayDuration={0}>
+        <TooltipProvider delayDuration={300}>
             {/* Mobile Trigger */}
             <button
                 onClick={toggle}
@@ -80,13 +81,13 @@ export function AppSidebar({ user }: SidebarProps) {
             </button>
 
             <aside id="main-sidebar" className={cn(
-                "fixed left-0 top-0 z-40 h-screen transition-all duration-300 border-r border-white/5 bg-sidebar flex flex-col font-sans",
+                "fixed left-0 top-0 z-40 h-screen transition-all duration-300 border-r border-white/5 bg-sidebar flex flex-col font-sans group/sidebar",
                 isOpen ? "w-64" : "w-0 -translate-x-full md:w-20 md:translate-x-0"
             )}>
-                <div className="flex items-center h-16 px-6 transition-all duration-300 border-b border-white/5">
+                <div className="flex items-center h-[72px] px-6 transition-all duration-300 border-b border-white/10">
                     <div className="flex items-center">
                         {/* Symbol */}
-                        <div className="relative h-8 w-8 shrink-0 group cursor-pointer">
+                        <div className="relative h-8 w-8 shrink-0 cursor-pointer">
                             <Image
                                 src="/brand/symbol.png"
                                 alt="Sollyd Symbol"
@@ -95,7 +96,7 @@ export function AppSidebar({ user }: SidebarProps) {
                             />
                             {/* Inner Gradient Hover Effect */}
                             <div
-                                className="absolute inset-0 z-20 bg-gradient-to-b from-[#00CEB6] to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none mix-blend-color-dodge"
+                                className="absolute inset-0 z-20 bg-gradient-to-t from-transparent via-[#00CEB6]/60 to-transparent opacity-0 group-hover/sidebar:opacity-100 group-hover/sidebar:animate-logo-sweep transition-opacity duration-300 pointer-events-none mix-blend-color-dodge"
                                 style={{
                                     maskImage: 'url(/brand/symbol.png)',
                                     WebkitMaskImage: 'url(/brand/symbol.png)',
@@ -133,14 +134,15 @@ export function AppSidebar({ user }: SidebarProps) {
                         const LinkItem = (
                             <Link
                                 href={item.disabled ? '#' : item.href}
-                                title={isOpen ? item.label : undefined} // Native title only if open (or remove completely)
+                                title={isOpen && !item.disabled ? item.label : undefined} // Native title only if open and not disabled
                                 aria-disabled={item.disabled}
+                                onClick={(e) => item.disabled && e.preventDefault()}
                                 className={cn(
                                     'flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 group relative overflow-hidden',
                                     isActive
                                         ? 'bg-sidebar-active text-white'
                                         : 'text-sidebar-muted hover:text-white hover:bg-sidebar-hover',
-                                    item.disabled && "opacity-50 cursor-not-allowed pointer-events-none"
+                                    item.disabled && "opacity-50 cursor-not-allowed" // Removed pointer-events-none
                                 )}
                             >
                                 <Icon className={cn(
@@ -157,30 +159,33 @@ export function AppSidebar({ user }: SidebarProps) {
                             </Link>
                         )
 
-                        if (isOpen) {
+                        // Show tooltip if sidebar is closed OR if item is disabled (to show "Em breve")
+                        if (!isOpen || item.disabled) {
                             return (
-                                <div key={item.label}>
-                                    {LinkItem}
-                                </div>
+                                <Tooltip key={item.label}>
+                                    <TooltipTrigger asChild>
+                                        <div className={item.disabled ? "cursor-not-allowed" : ""}>
+                                            {LinkItem}
+                                        </div>
+                                    </TooltipTrigger>
+                                    <TooltipContent side="right">
+                                        <p>{(item as any).tooltip || item.label}</p>
+                                    </TooltipContent>
+                                </Tooltip>
                             )
                         }
 
                         return (
-                            <Tooltip key={item.label}>
-                                <TooltipTrigger asChild>
-                                    {LinkItem}
-                                </TooltipTrigger>
-                                <TooltipContent side="right" className="font-medium bg-sidebar border-white/10 text-white">
-                                    {item.label}
-                                </TooltipContent>
-                            </Tooltip>
+                            <div key={item.label}>
+                                {LinkItem}
+                            </div>
                         )
                     })}
                 </nav>
 
 
 
-                <div className="p-4 border-t border-white/5">
+                <div className="p-4 border-t border-white/10">
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                             <Button

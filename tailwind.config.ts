@@ -57,9 +57,9 @@ const config: Config = {
 					'5': 'hsl(var(--chart-5))'
 				},
 				sidebar: {
-					DEFAULT: '#001512',
-					hover: '#01211D',
-					active: '#01211D',
+					DEFAULT: '#000F0D',
+					hover: '#001D1A',
+					active: '#001D1A',
 					muted: 'rgba(255, 255, 255, 0.7)',
 				}
 			},

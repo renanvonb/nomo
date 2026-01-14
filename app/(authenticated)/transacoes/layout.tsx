@@ -15,14 +15,9 @@ export default async function TransacoesLayout({
     }
 
     return (
-        <div className="flex flex-col h-screen overflow-hidden bg-zinc-50 font-sans">
-            {/* Top App Bar */}
-            <PageHeader links={[]} />
-
-            {/* Conteúdo Principal */}
-            <main className="flex-1 flex flex-col overflow-hidden">
-                {children}
-            </main>
+        <div className="flex-1 flex flex-col min-h-0 bg-zinc-50 font-sans">
+            {/* O TopBar e PageHeader são renderizados na page.tsx para maior controle dos filtros */}
+            {children}
         </div>
     )
 }

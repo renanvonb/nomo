@@ -77,12 +77,12 @@ export function TransactionSummaryCards({ totals, isLoading }: TransactionSummar
     ]
 
     return (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 p-1">
             {cards.map((card, index) => (
                 <Card
                     key={index}
                     className={cn(
-                        "group relative overflow-hidden border-zinc-200 bg-white rounded-[20px] p-6 transition-all duration-300",
+                        "group relative overflow-hidden border-zinc-200 bg-white rounded-[20px] p-6 transition-all duration-300 shadow-sm hover:shadow-md hover:-translate-y-1",
                         isLoading && "pointer-events-none"
                     )}
                 >

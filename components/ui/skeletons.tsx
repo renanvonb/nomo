@@ -123,9 +123,61 @@ export function SidebarSkeleton() {
  */
 export const TableSkeleton = TransactionsTableSkeleton
 
+/**
+ * TableContentSkeleton: Only the table part without search/header/cards
+ */
+export function TableContentSkeleton() {
+    return (
+        <div className="flex-1 bg-white border border-zinc-200 rounded-2xl shadow-sm overflow-hidden flex flex-col relative animate-pulse">
+            {/* Fake Header */}
+            <div className="h-14 bg-white border-b border-zinc-200 flex items-center px-6 gap-4">
+                <Skeleton className="h-4 w-32 bg-zinc-100" />
+                <Skeleton className="h-4 w-20 bg-zinc-100 text-transparent" />
+                <Skeleton className="h-4 w-24 bg-zinc-100" />
+                <Skeleton className="h-4 w-24 bg-zinc-100" />
+                <Skeleton className="h-4 w-24 bg-zinc-100 ml-auto" />
+            </div>
+            {/* Fake Rows */}
+            <div className="flex-1 overflow-hidden divide-y divide-zinc-100">
+                {[1, 2, 3, 4, 5, 6].map((i) => (
+                    <div key={i} className="h-16 flex items-center px-6 gap-4">
+                        <Skeleton className="h-4 w-40 bg-zinc-50" />
+                        <Skeleton className="h-6 w-16 rounded-full bg-zinc-50" />
+                        <Skeleton className="h-6 w-24 rounded-full bg-zinc-50" />
+                        <Skeleton className="h-6 w-24 rounded-full bg-zinc-50" />
+                        <Skeleton className="h-4 w-20 ml-auto bg-zinc-50" />
+                    </div>
+                ))}
+            </div>
+        </div>
+    )
+}
+
+
+/**
+ * ModuleCardsSkeleton: Grid of card skeletons for modules like Cadastros
+ */
+export function ModuleCardsSkeleton() {
+    return (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 animate-pulse">
+            {[...Array(28)].map((_, i) => (
+                <div key={i} className="bg-white border border-zinc-200 rounded-2xl p-6 flex flex-col gap-4">
+                    <div className="flex items-center gap-4">
+                        <Skeleton className="h-12 w-12 rounded-2xl bg-zinc-100" />
+                        <div className="flex-1 space-y-2">
+                            <Skeleton className="h-4 w-3/4 bg-zinc-100" />
+                            <Skeleton className="h-3 w-1/2 bg-zinc-50" />
+                        </div>
+                    </div>
+                </div>
+            ))}
+        </div>
+    )
+}
+
 export function TopbarSkeleton() {
     return (
-        <div className="h-16 w-full border-b flex items-center px-6 justify-between bg-white">
+        <div className="h-[72px] w-full border-b flex items-center px-6 justify-between bg-white">
             <Skeleton className="h-4 w-32" /> {/* Breadcrumb */}
             <div className="flex items-center space-x-8">
                 <Skeleton className="h-4 w-16" />

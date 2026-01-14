@@ -7,60 +7,53 @@ import { Button } from "@/components/ui/button"
 import {
     Form,
     FormControl,
-    FormDescription,
     FormField,
     FormItem,
     FormLabel,
     FormMessage,
 } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
-import { Textarea } from "@/components/ui/textarea"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Loader2 } from "lucide-react"
 import { ColorPicker, getColorClass } from "./color-picker"
 import { IconPicker, getIconByName } from "./icon-picker"
-import { Classification } from "@/types/entities"
 import { useEffect, useState } from "react"
-import { createCategory, updateCategory } from "@/lib/supabase/cadastros"
+import { createPayee, updatePayee } from "@/lib/supabase/cadastros"
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
 
 const formSchema = z.object({
-    name: z.string().min(1, "Nome é obrigatório").max(50, "Máximo 50 caracteres"),
-    description: z.string().max(200, "Máximo 200 caracteres").optional(),
-    classification_id: z.string().optional(),
-    icon: z.string().min(1, "Ícone é obrigatório"),
+    name: z.string().min(1, "Nome é obrigatório"),
     color: z.string().min(1, "Cor é obrigatória"),
+    icon: z.string().min(1, "Ícone é obrigatório"),
 })
 
-export type CategoryFormValues = z.infer<typeof formSchema>;
+export type PayeeFormValues = z.infer<typeof formSchema>;
 
-interface CategoryFormProps {
-    defaultValues?: Partial<CategoryFormValues>;
-    categoryId?: string;
-    classifications: Classification[];
+interface PayeeFormProps {
+    defaultValues?: Partial<PayeeFormValues>;
+    payeeId?: string;
+    type: 'payer' | 'favored' | 'both';
     onSuccess: () => void;
     onCancel: () => void;
     onDelete?: () => void;
 }
 
-export function CategoryForm({
+export function PayeeForm({
     defaultValues,
-    categoryId,
-    classifications,
+    payeeId,
+    type,
     onSuccess,
     onCancel,
     onDelete,
-}: CategoryFormProps) {
+}: PayeeFormProps) {
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const form = useForm<CategoryFormValues>({
+
+    const form = useForm<PayeeFormValues>({
         resolver: zodResolver(formSchema),
         defaultValues: {
             name: '',
-            description: '',
-            classification_id: '',
-            icon: 'cart',
             color: 'zinc',
+            icon: 'user',
             ...defaultValues
         },
     })
@@ -70,43 +63,33 @@ export function CategoryForm({
     const watchColor = watch('color');
     const watchIcon = watch('icon');
 
-    // Reset form when defaultValues change (e.g. switching between edit/create)
     useEffect(() => {
         if (defaultValues) {
             form.reset({
                 name: '',
-                description: '',
-                classification_id: '',
-                icon: 'cart',
                 color: 'zinc',
+                icon: 'user',
                 ...defaultValues
             });
         }
     }, [defaultValues, form]);
 
-    const handleSubmit = async (values: CategoryFormValues) => {
+    const handleSubmit = async (values: PayeeFormValues) => {
         try {
             setIsSubmitting(true);
+            const payload = { ...values, type };
 
-            // Sanitize payload: convert empty strings to undefined to avoid UUID errors or empty text
-            const payload = {
-                ...values,
-                description: values.description || undefined,
-                classification_id: values.classification_id || undefined,
-            };
-
-            // Helper functions handle user_id injection via auth.getUser() implicitly/explicitly
-            if (categoryId) {
-                await updateCategory(categoryId, payload);
-                toast.success('Categoria atualizada com sucesso!');
+            if (payeeId) {
+                await updatePayee(payeeId, payload);
+                toast.success(`${type === 'payer' ? 'Pagador' : 'Beneficiário'} atualizado com sucesso!`);
             } else {
-                await createCategory(payload);
-                toast.success('Categoria criada com sucesso!');
+                await createPayee(payload);
+                toast.success(`${type === 'payer' ? 'Pagador' : 'Beneficiário'} criado com sucesso!`);
             }
             onSuccess();
         } catch (error: any) {
-            console.error('Error saving category:', error);
-            toast.error(error.message || 'Erro ao salvar categoria');
+            console.error('Error saving payee:', error);
+            toast.error(error.message || 'Erro ao salvar registro');
         } finally {
             setIsSubmitting(false);
         }
@@ -122,7 +105,7 @@ export function CategoryForm({
                     <IconComp className="h-4 w-4 text-white" />
                 </div>
                 <span className="text-sm font-medium text-zinc-900">
-                    {watchName || 'Nome da categoria'}
+                    {watchName || (type === 'payer' ? 'Nome do pagador' : 'Nome do beneficiário')}
                 </span>
             </div>
         );
@@ -142,50 +125,8 @@ export function CategoryForm({
                                 Nome <span className="text-red-600">*</span>
                             </FormLabel>
                             <FormControl>
-                                <Input {...field} placeholder="Ex: Alimentação, Lazer" className="font-inter" />
+                                <Input {...field} placeholder="Ex: Mercado Livre, Netflix" className="font-inter" />
                             </FormControl>
-                            <FormMessage />
-                        </FormItem>
-                    )}
-                />
-
-                <FormField
-                    control={form.control}
-                    name="description"
-                    render={({ field }) => (
-                        <FormItem>
-                            <FormLabel>Descrição</FormLabel>
-                            <FormControl>
-                                <Textarea {...field} placeholder="Descrição opcional" className="font-inter" />
-                            </FormControl>
-                            <FormMessage />
-                        </FormItem>
-                    )}
-                />
-
-                <FormField
-                    control={form.control}
-                    name="classification_id"
-                    render={({ field }) => (
-                        <FormItem>
-                            <FormLabel>Classificação</FormLabel>
-                            <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value}>
-                                <FormControl>
-                                    <SelectTrigger className="font-inter text-zinc-600">
-                                        <SelectValue placeholder="Selecione uma classificação" />
-                                    </SelectTrigger>
-                                </FormControl>
-                                <SelectContent>
-                                    {classifications.map((item) => (
-                                        <SelectItem key={item.id} value={item.id}>
-                                            {item.name}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                            <FormDescription>
-                                Opcional, usado para agrupamento.
-                            </FormDescription>
                             <FormMessage />
                         </FormItem>
                     )}

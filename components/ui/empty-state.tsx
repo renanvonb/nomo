@@ -4,12 +4,12 @@ import { LucideIcon } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 const emptyStateVariants = cva(
-    "flex flex-col items-center justify-center text-center animate-in fade-in zoom-in-95 duration-300",
+    "flex flex-col items-center justify-center text-center",
     {
         variants: {
             variant: {
                 default: "bg-background",
-                outlined: "border-2 border-dashed border-muted-foreground/20 bg-muted/5 rounded-2xl",
+                outlined: "border border-dashed border-zinc-200 bg-white rounded-2xl",
             },
             size: {
                 sm: "p-6 min-h-[200px]",
@@ -40,18 +40,20 @@ const EmptyState = React.forwardRef<HTMLDivElement, EmptyStateProps>(
                 className={cn(emptyStateVariants({ variant, size }), className)}
                 {...props}
             >
-                {Icon && (
-                    <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-zinc-100">
-                        <Icon className="h-8 w-8 text-zinc-400" strokeWidth={1.5} />
-                    </div>
-                )}
-                <h3 className="text-xl font-bold tracking-tight font-jakarta">{title}</h3>
-                {description && (
-                    <p className="mt-2 text-zinc-500 font-sans max-w-[400px]">
-                        {description}
-                    </p>
-                )}
-                {action && <div className="mt-8">{action}</div>}
+                <div className="flex flex-col items-center justify-center animate-in fade-in zoom-in-95 duration-500">
+                    {Icon && (
+                        <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-zinc-100">
+                            <Icon className="h-8 w-8 text-zinc-400" strokeWidth={1.5} />
+                        </div>
+                    )}
+                    <h3 className="text-xl font-bold tracking-tight font-jakarta">{title}</h3>
+                    {description && (
+                        <p className="mt-2 text-zinc-500 font-sans max-w-[400px]">
+                            {description}
+                        </p>
+                    )}
+                    {action && <div className="mt-8">{action}</div>}
+                </div>
             </div>
         )
     }

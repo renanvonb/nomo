@@ -7,61 +7,56 @@ import { Button } from "@/components/ui/button"
 import {
     Form,
     FormControl,
-    FormDescription,
     FormField,
     FormItem,
     FormLabel,
     FormMessage,
 } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
-import { Textarea } from "@/components/ui/textarea"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Switch } from "@/components/ui/switch"
 import { Loader2 } from "lucide-react"
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ColorPicker, getColorClass } from "./color-picker"
-import { IconPicker, getIconByName } from "./icon-picker"
-import { Classification } from "@/types/entities"
+import { getIconByName } from "./icon-picker"
 import { useEffect, useState } from "react"
-import { createCategory, updateCategory } from "@/lib/supabase/cadastros"
+import { createWallet, updateWallet, setWalletAsPrincipal } from "@/lib/supabase/cadastros"
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
 
 const formSchema = z.object({
-    name: z.string().min(1, "Nome é obrigatório").max(50, "Máximo 50 caracteres"),
-    description: z.string().max(200, "Máximo 200 caracteres").optional(),
-    classification_id: z.string().optional(),
-    icon: z.string().min(1, "Ícone é obrigatório"),
+    name: z.string().min(1, "Nome é obrigatório"),
     color: z.string().min(1, "Cor é obrigatória"),
+    icon: z.string().min(1, "Ícone é obrigatório"),
+    is_principal: z.boolean(),
 })
 
-export type CategoryFormValues = z.infer<typeof formSchema>;
+export type WalletFormValues = z.infer<typeof formSchema>;
 
-interface CategoryFormProps {
-    defaultValues?: Partial<CategoryFormValues>;
-    categoryId?: string;
-    classifications: Classification[];
+interface WalletFormProps {
+    defaultValues?: Partial<WalletFormValues>;
+    walletId?: string;
     onSuccess: () => void;
     onCancel: () => void;
     onDelete?: () => void;
 }
 
-export function CategoryForm({
+export function WalletForm({
     defaultValues,
-    categoryId,
-    classifications,
+    walletId,
     onSuccess,
     onCancel,
     onDelete,
-}: CategoryFormProps) {
+}: WalletFormProps) {
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const form = useForm<CategoryFormValues>({
+
+    const form = useForm<WalletFormValues>({
         resolver: zodResolver(formSchema),
         defaultValues: {
             name: '',
-            description: '',
-            classification_id: '',
-            icon: 'cart',
             color: 'zinc',
-            ...defaultValues
+            icon: 'dollar-sign',
+            is_principal: false,
+            ...defaultValues,
         },
     })
 
@@ -70,50 +65,46 @@ export function CategoryForm({
     const watchColor = watch('color');
     const watchIcon = watch('icon');
 
-    // Reset form when defaultValues change (e.g. switching between edit/create)
     useEffect(() => {
         if (defaultValues) {
             form.reset({
                 name: '',
-                description: '',
-                classification_id: '',
-                icon: 'cart',
                 color: 'zinc',
-                ...defaultValues
+                icon: 'dollar-sign',
+                is_principal: false,
+                ...defaultValues,
             });
         }
     }, [defaultValues, form]);
 
-    const handleSubmit = async (values: CategoryFormValues) => {
+    const handleSubmit = async (values: WalletFormValues) => {
         try {
             setIsSubmitting(true);
-
-            // Sanitize payload: convert empty strings to undefined to avoid UUID errors or empty text
-            const payload = {
-                ...values,
-                description: values.description || undefined,
-                classification_id: values.classification_id || undefined,
-            };
-
-            // Helper functions handle user_id injection via auth.getUser() implicitly/explicitly
-            if (categoryId) {
-                await updateCategory(categoryId, payload);
-                toast.success('Categoria atualizada com sucesso!');
+            if (walletId) {
+                await updateWallet(walletId, values);
+                if (values.is_principal) {
+                    await setWalletAsPrincipal(walletId);
+                }
+                toast.success('Carteira atualizada com sucesso!');
             } else {
-                await createCategory(payload);
-                toast.success('Categoria criada com sucesso!');
+                const newWallet = await createWallet(values);
+                if (values.is_principal && newWallet.id) {
+                    await setWalletAsPrincipal(newWallet.id);
+                }
+                toast.success('Carteira criada com sucesso!');
             }
             onSuccess();
         } catch (error: any) {
-            console.error('Error saving category:', error);
-            toast.error(error.message || 'Erro ao salvar categoria');
+            console.error('Error saving wallet:', error);
+            toast.error(error.message || 'Erro ao salvar carteira');
         } finally {
             setIsSubmitting(false);
         }
     };
 
     const PreviewBadge = () => {
-        const IconComp = getIconByName(watchIcon);
+        // Always display dollar-sign visually, even though we store type info in the icon field
+        const IconComp = getIconByName('dollar-sign');
         const colorClass = getColorClass(watchColor);
 
         return (
@@ -122,7 +113,7 @@ export function CategoryForm({
                     <IconComp className="h-4 w-4 text-white" />
                 </div>
                 <span className="text-sm font-medium text-zinc-900">
-                    {watchName || 'Nome da categoria'}
+                    {watchName || 'Nome da carteira'}
                 </span>
             </div>
         );
@@ -133,6 +124,22 @@ export function CategoryForm({
             <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
                 <PreviewBadge />
 
+                <div className="pb-2">
+                    <Tabs
+                        defaultValue={watchIcon === 'building-2' || watchIcon === 'building' ? 'corporate' : 'individual'}
+                        className="w-full"
+                        onValueChange={(value) => {
+                            // Store the type in the icon field, even if we don't display it
+                            form.setValue('icon', value === 'corporate' ? 'building-2' : 'user-round', { shouldDirty: true });
+                        }}
+                    >
+                        <TabsList className="grid w-full grid-cols-2">
+                            <TabsTrigger value="individual">Pessoa física</TabsTrigger>
+                            <TabsTrigger value="corporate">Pessoa jurídica</TabsTrigger>
+                        </TabsList>
+                    </Tabs>
+                </div>
+
                 <FormField
                     control={form.control}
                     name="name"
@@ -142,63 +149,7 @@ export function CategoryForm({
                                 Nome <span className="text-red-600">*</span>
                             </FormLabel>
                             <FormControl>
-                                <Input {...field} placeholder="Ex: Alimentação, Lazer" className="font-inter" />
-                            </FormControl>
-                            <FormMessage />
-                        </FormItem>
-                    )}
-                />
-
-                <FormField
-                    control={form.control}
-                    name="description"
-                    render={({ field }) => (
-                        <FormItem>
-                            <FormLabel>Descrição</FormLabel>
-                            <FormControl>
-                                <Textarea {...field} placeholder="Descrição opcional" className="font-inter" />
-                            </FormControl>
-                            <FormMessage />
-                        </FormItem>
-                    )}
-                />
-
-                <FormField
-                    control={form.control}
-                    name="classification_id"
-                    render={({ field }) => (
-                        <FormItem>
-                            <FormLabel>Classificação</FormLabel>
-                            <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value}>
-                                <FormControl>
-                                    <SelectTrigger className="font-inter text-zinc-600">
-                                        <SelectValue placeholder="Selecione uma classificação" />
-                                    </SelectTrigger>
-                                </FormControl>
-                                <SelectContent>
-                                    {classifications.map((item) => (
-                                        <SelectItem key={item.id} value={item.id}>
-                                            {item.name}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                            <FormDescription>
-                                Opcional, usado para agrupamento.
-                            </FormDescription>
-                            <FormMessage />
-                        </FormItem>
-                    )}
-                />
-
-                <FormField
-                    control={form.control}
-                    name="icon"
-                    render={({ field }) => (
-                        <FormItem>
-                            <FormLabel>Ícone</FormLabel>
-                            <FormControl>
-                                <IconPicker value={field.value} onChange={field.onChange} />
+                                <Input {...field} placeholder="Informe o nome da carteira" className="font-inter" />
                             </FormControl>
                             <FormMessage />
                         </FormItem>
@@ -215,6 +166,27 @@ export function CategoryForm({
                                 <ColorPicker value={field.value} onChange={field.onChange} />
                             </FormControl>
                             <FormMessage />
+                        </FormItem>
+                    )}
+                />
+
+                <FormField
+                    control={form.control}
+                    name="is_principal"
+                    render={({ field }) => (
+                        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4 space-y-0 !mt-6 text-zinc-950">
+                            <div className="space-y-0.5">
+                                <FormLabel className="text-base">Carteira principal</FormLabel>
+                                <p className="text-sm text-zinc-500 font-inter">
+                                    Definir como padrão para novas transações
+                                </p>
+                            </div>
+                            <FormControl>
+                                <Switch
+                                    checked={field.value}
+                                    onCheckedChange={field.onChange}
+                                />
+                            </FormControl>
                         </FormItem>
                     )}
                 />

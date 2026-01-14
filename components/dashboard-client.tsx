@@ -4,7 +4,7 @@ import * as React from "react"
 import { useTransition } from "react"
 import { DateRange } from "react-day-picker"
 import { useRouter, useSearchParams } from "next/navigation"
-import { format, startOfMonth, endOfMonth, parseISO, startOfDay, endOfDay } from "date-fns"
+import { format, startOfMonth, endOfMonth, parseISO } from "date-fns"
 import { ptBR } from "date-fns/locale"
 
 import { TransactionSummaryCards } from "@/components/transaction-summary-cards"
@@ -12,22 +12,24 @@ import { TimeRange } from "@/app/actions/transactions-fetch"
 import { Eye, EyeOff, Search } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from "@/components/ui/select"
 import { AdaptiveDatePicker } from "@/components/ui/adaptive-date-picker"
 import { useVisibility } from "@/hooks/use-visibility-state"
 import { CategoryBarChart } from "@/components/shared/charts/category-bar-chart"
 import { ClassificationPieChart } from "@/components/shared/charts/classification-pie-chart"
 import { MonthlyBalanceChart } from "@/components/shared/charts/monthly-balance-chart"
+import { TopBar } from "@/components/ui/top-bar"
 
 interface DashboardClientProps {
     initialData: any[]
 }
+
+const periodTabs = [
+    { id: 'dia', label: 'Dia' },
+    { id: 'semana', label: 'Semana' },
+    { id: 'mes', label: 'Mês' },
+    { id: 'ano', label: 'Ano' },
+    { id: 'custom', label: 'Período' },
+]
 
 export default function DashboardClient({ initialData }: DashboardClientProps) {
     const router = useRouter()
@@ -188,12 +190,20 @@ export default function DashboardClient({ initialData }: DashboardClientProps) {
 
     return (
         <div className="flex-1 flex flex-col overflow-hidden">
+            <TopBar
+                moduleName="Dashboard"
+                tabs={periodTabs}
+                activeTab={range}
+                onTabChange={handleRangeChange as any}
+                variant="simple"
+            />
+
             <div className="max-w-[1440px] mx-auto px-8 w-full flex-1 flex flex-col pt-8 pb-8 gap-6 overflow-y-auto">
                 {/* Page Header */}
                 <div className="flex items-center justify-between flex-none">
-                    <div>
+                    <div className="ml-2">
                         <h1 className="text-3xl font-bold tracking-tight text-zinc-950 font-jakarta">
-                            Olá, Renan! 👋🏻
+                            Olá, Renan!
                         </h1>
                         <p className="text-zinc-500 mt-1 font-sans text-sm font-inter">
                             Visualize o desempenho das suas finanças em tempo real.
@@ -201,7 +211,14 @@ export default function DashboardClient({ initialData }: DashboardClientProps) {
                     </div>
 
                     <div id="standard-filters" className="flex items-center gap-3 font-sans justify-end flex-wrap">
-                        <div className="relative w-[200px]">
+                        <AdaptiveDatePicker
+                            mode={range}
+                            value={date}
+                            onChange={handleDateChange}
+                            className="w-auto"
+                        />
+
+                        <div className="relative w-[250px]">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400" />
                             <Input
                                 placeholder="Buscar"
@@ -211,52 +228,29 @@ export default function DashboardClient({ initialData }: DashboardClientProps) {
                             />
                         </div>
 
-                        <Select value={range} onValueChange={handleRangeChange}>
-                            <SelectTrigger className="w-[80px] font-inter">
-                                <SelectValue placeholder="Mês" />
-                            </SelectTrigger>
-                            <SelectContent className='bg-white'>
-                                <SelectItem value="dia">Dia</SelectItem>
-                                <SelectItem value="semana">Semana</SelectItem>
-                                <SelectItem value="mes">Mês</SelectItem>
-                                <SelectItem value="ano">Ano</SelectItem>
-                            </SelectContent>
-                        </Select>
 
-                        <AdaptiveDatePicker
-                            mode={range}
-                            value={date}
-                            onChange={handleDateChange}
-                            className="w-[150px]"
-                        />
-
-                        <Button
-                            variant="outline"
-                            size="icon"
-                            onClick={toggleVisibility}
-                            className="h-10 w-10 text-zinc-500"
-                        >
-                            {isVisible ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
-                        </Button>
                     </div>
                 </div>
 
                 {/* Dashboard Content */}
-                <div className="flex flex-col gap-6">
+                <div className="flex flex-col flex-1 min-h-0 gap-8">
                     {/* Row 1: Summary Cards */}
                     <TransactionSummaryCards totals={totals} isLoading={isPending} />
 
-                    {/* Row 2: Category Bar + Classification Pie */}
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                        <CategoryBarChart
-                            data={categoryData}
-                            subcategoryData={subcategoryData}
-                        />
-                        <ClassificationPieChart data={classificationData} />
-                    </div>
+                    {/* Charts Portion */}
+                    <div className="flex flex-col flex-1 min-h-0 gap-4">
+                        {/* Row 2: Category Bar + Classification Pie */}
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                            <CategoryBarChart
+                                data={categoryData}
+                                subcategoryData={subcategoryData}
+                            />
+                            <ClassificationPieChart data={classificationData} />
+                        </div>
 
-                    {/* Row 3: Monthly Balance Line Chart */}
-                    <MonthlyBalanceChart data={monthlyBalanceData} />
+                        {/* Row 3: Monthly Balance Line Chart */}
+                        <MonthlyBalanceChart data={monthlyBalanceData} className="flex-1" />
+                    </div>
                 </div>
             </div>
         </div>

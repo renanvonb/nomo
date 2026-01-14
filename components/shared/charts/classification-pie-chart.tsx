@@ -95,12 +95,9 @@ export function ClassificationPieChart({ data }: ClassificationPieChartProps) {
     return (
         <Card className="rounded-[16px] border-zinc-200 shadow-sm">
             <CardHeader>
-                <CardTitle className="text-lg font-semibold font-jakarta text-zinc-950">
-                    Despesas por Classificação
+                <CardTitle className="text-zinc-500 font-semibold font-sans tracking-tight text-sm">
+                    Classificações
                 </CardTitle>
-                <CardDescription className="text-sm text-zinc-500 font-inter">
-                    Distribuição por tipo de gasto
-                </CardDescription>
             </CardHeader>
             <CardContent>
                 {chartData.length === 0 ? (

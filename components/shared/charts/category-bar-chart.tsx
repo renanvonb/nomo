@@ -113,31 +113,11 @@ export function CategoryBarChart({ data, subcategoryData }: CategoryBarChartProp
         <Card className="rounded-[16px] border-zinc-200 shadow-sm">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
                 <div>
-                    <CardTitle className="text-lg font-semibold font-jakarta text-zinc-950">
-                        Gastos por {viewMode === 'category' ? 'Categoria' : 'Subcategoria'}
+                    <CardTitle className="text-zinc-500 font-semibold font-sans tracking-tight text-sm">
+                        Categorias
                     </CardTitle>
-                    <CardDescription className="text-sm text-zinc-500 font-inter mt-1">
-                        Distribuição de despesas
-                    </CardDescription>
                 </div>
-                <div className="flex gap-2">
-                    <Button
-                        variant={viewMode === 'category' ? 'default' : 'outline'}
-                        size="sm"
-                        onClick={() => setViewMode('category')}
-                        className="font-inter text-xs"
-                    >
-                        Categoria
-                    </Button>
-                    <Button
-                        variant={viewMode === 'subcategory' ? 'default' : 'outline'}
-                        size="sm"
-                        onClick={() => setViewMode('subcategory')}
-                        className="font-inter text-xs"
-                    >
-                        Subcategoria
-                    </Button>
-                </div>
+
             </CardHeader>
             <CardContent>
                 {chartData.length === 0 ? (

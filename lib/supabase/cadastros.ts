@@ -15,8 +15,10 @@ export interface Wallet {
     logo_url?: string;
     color?: string;
     icon?: string;
+    is_principal: boolean;
     created_at: string;
     updated_at: string;
+    transactions?: { count: number }[];
 }
 
 export interface Category {
@@ -30,6 +32,8 @@ export interface Category {
     created_at: string;
     updated_at: string;
     classifications?: Classification;
+    transactions?: { count: number }[];
+    subcategories?: { count: number }[];
 }
 
 export interface Subcategory {
@@ -47,8 +51,14 @@ export interface Classification {
     id: string;
     user_id: string;
     name: string;
+    description?: string;
+    color: string;
+    icon: string;
     created_at: string;
     updated_at: string;
+    transactions_count?: number;
+    transactions?: { count: number }[];
+    categories?: { count: number }[];
 }
 
 // Pagadores (para Receitas) - com ícone
@@ -61,6 +71,7 @@ export interface Payer {
     type?: 'payer' | 'favored' | 'both';
     created_at: string;
     updated_at: string;
+    transactions?: { count: number }[];
 }
 
 // Favorecidos (para Despesas) - com ícone
@@ -73,6 +84,7 @@ export interface Payee {
     type?: 'payer' | 'favored' | 'both';
     created_at: string;
     updated_at: string;
+    transactions?: { count: number }[];
 }
 
 // =====================================================
@@ -83,7 +95,7 @@ export async function getWallets(): Promise<Wallet[]> {
     const supabase = createClient();
     const { data, error } = await supabase
         .from('wallets')
-        .select('*')
+        .select('*, transactions(count)')
         .order('name', { ascending: true });
 
     if (error) throw error;
@@ -137,6 +149,26 @@ export async function deleteWallet(id: string): Promise<void> {
     if (error) throw error;
 }
 
+export async function setWalletAsPrincipal(id: string): Promise<void> {
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('Usuário não autenticado');
+
+    // Desmarcar todas as outras
+    await supabase
+        .from('wallets')
+        .update({ is_principal: false })
+        .eq('user_id', user.id)
+        .neq('id', id);
+
+    // Marcar a selecionada
+    await supabase
+        .from('wallets')
+        .update({ is_principal: true })
+        .eq('id', id)
+        .eq('user_id', user.id);
+}
+
 // =====================================================
 // CRUD OPERATIONS - CATEGORIES (Unified)
 // =====================================================
@@ -149,7 +181,7 @@ export async function getCategories(): Promise<Category[]> {
 
     const { data, error } = await supabase
         .from('categories')
-        .select('*, classifications(*)')
+        .select('*, classifications(*), transactions(count), subcategories(count)')
         .eq('user_id', user.id)
         .order('name', { ascending: true });
 
@@ -260,6 +292,22 @@ export async function updateSubcategory(id: string, subcategory: Partial<Subcate
     return data;
 }
 
+export async function getSubcategoriesByCategoryId(categoryId: string): Promise<Subcategory[]> {
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('Usuário não autenticado');
+
+    const { data, error } = await supabase
+        .from('subcategories')
+        .select('*')
+        .eq('category_id', categoryId)
+        .eq('user_id', user.id)
+        .order('name', { ascending: true });
+
+    if (error) throw error;
+    return data || [];
+}
+
 export async function deleteSubcategory(id: string): Promise<void> {
     const supabase = createClient();
     const { data: { user } } = await supabase.auth.getUser();
@@ -280,9 +328,14 @@ export async function deleteSubcategory(id: string): Promise<void> {
 
 export async function getClassifications(): Promise<Classification[]> {
     const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) throw new Error('Usuário não autenticado');
+
     const { data, error } = await supabase
         .from('classifications')
-        .select('*')
+        .select('*, categories(count)')
+        .eq('user_id', user.id)
         .order('name', { ascending: true });
 
     if (error) throw error;
@@ -348,7 +401,7 @@ export async function getPayees(typeFilter?: 'payer' | 'favored'): Promise<Payee
 
     let query = supabase
         .from('payees')
-        .select('*')
+        .select('*, transactions(count)')
         .eq('user_id', user.id) // Filtro explícito de segurança (além do RLS)
         .order('name', { ascending: true });
 
@@ -450,7 +503,7 @@ export async function getPayers(): Promise<Payer[]> {
 
     const { data, error } = await supabase
         .from('payees')
-        .select('*')
+        .select('*, transactions(count)')
         .or('type.eq.payer,type.eq.both')
         .order('name', { ascending: true });
 
